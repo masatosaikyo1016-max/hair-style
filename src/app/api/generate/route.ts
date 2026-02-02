@@ -19,6 +19,11 @@ export async function POST(request: Request) {
         // サーバーサイドでAPIキーを取得 (環境変数)
         const apiKey = process.env.GEMINI_API_KEY;
 
+        console.log("--- Debug: Environment Check ---");
+        console.log("Is API Key present?", apiKey ? "YES" : "NO");
+        if (apiKey) console.log("API Key length:", apiKey.length);
+        console.log("Current Environment:", process.env.NODE_ENV);
+
         if (!apiKey) {
             console.error("API Key is missing in server environment");
             return NextResponse.json(
