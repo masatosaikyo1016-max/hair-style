@@ -64,86 +64,32 @@ export function GenerateArea({ modelImage, settings }: GenerateAreaProps) {
 
             // 2. Resize to optimal size for Gemini (e.g. max 1536px)
             const resizedModelFile = await resizeImage(croppedModelFile, 1536, 1536);
-            const resizedModelBase64 = await fileToBase64(resizedModelFile);
+            // const resizedModelBase64 = await fileToBase64(resizedModelFile); // Base64 conversion not needed for FormData
 
-            // Construct Prompt for Hair Color Change
-            let prompt = `
-            Act as a professional hair colorist and photo editor.
-            Task: Change the hair color of the person in the image naturally.
-            
-            Input:
-            - Target Hair Color: ${settings.hairColor}
-            
-            Instructions:
-            1. Identify the hair region of the person in the photo accurately.
-            2. Change the hair color to "${settings.hairColor}".
-            3. Maintain the natural texture, lighting, and shading of the original hair.
-            4. Do NOT change the skin tone, background, or clothes.
-            5. Ensure the edges between hair and face/background are natural.
-            
-            Output Requirement:
-            - Photorealistic quality.
-            - Keep the original resolution and aspect ratio.
-            `;
+            console.log("Calling Server-side API...");
 
-            const contentsParts: any[] = [
-                { text: prompt }
-            ];
+            // Prepare FormData for Server API
+            const formData = new FormData();
+            formData.append('modelImage', resizedModelFile);
+            formData.append('hairColor', settings.hairColor);
 
-            // Model image
-            contentsParts.push({ inline_data: { mime_type: "image/jpeg", data: resizedModelBase64 } });
-
-
-            // 4. Call Google API Directly
-            const apiKey = "AIzaSyCymikEwW8Flfs9VDKTJgfvveCJCiK8jjw"; // Used directly on client as per user agreement
-
-            // !! USER REQUEST: KEEP GEMINI 2.5 !!
-            const targetUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=${apiKey}`;
-
-            const response = await fetch(targetUrl, {
+            const response = await fetch('/api/generate', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    contents: [{ parts: contentsParts }],
-                    generationConfig: {
-                        temperature: 0.4,
-                        topK: 32,
-                        topP: 1,
-                        maxOutputTokens: 2048,
-                    },
-                    safetySettings: [
-                        { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
-                        { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
-                        { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
-                        { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }
-                    ]
-                }),
+                body: formData,
             });
 
             if (!response.ok) {
-                const errorText = await response.text();
-                // Throw detailed error with status code
-                throw new Error(`Google API Error (${response.status}): ${errorText}`);
+                const errorData = await response.json();
+                console.error("Server API Error:", response.status, errorData);
+                throw new Error(errorData.error || `Server Error (${response.status})`);
             }
 
             const data = await response.json();
-            const parts = data.candidates?.[0]?.content?.parts || [];
 
-            // Search for the image part in all parts (model might return text + image)
-            const imagePart = parts.find((p: any) => p.inlineData || p.inline_data);
-            const inlineData = imagePart?.inlineData || imagePart?.inline_data;
-
-            if (inlineData?.data) {
-                const base64Result = inlineData.data;
-                const mimeType = inlineData.mimeType || inlineData.mime_type || "image/jpeg";
-                setGeneratedImage(`data:${mimeType};base64,${base64Result}`);
+            if (data.imageUrl) {
+                setGeneratedImage(data.imageUrl);
             } else {
-                // If no image found, check for text explanation
-                const textPart = parts.find((p: any) => p.text);
-                if (textPart?.text) {
-                    throw new Error(`画像生成が拒否されました (Text Response): ${textPart.text}`);
-                }
-                throw new Error("予期しないAPI応答形式です。画像データが含まれていません。");
+                throw new Error("予期しないサーバー応答: 画像データが含まれていません。");
             }
 
         } catch (error) {
