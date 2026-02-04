@@ -16,7 +16,8 @@ export default function Home() {
     lighting: "Natural Light",
     shotType: "Waist-Up",
     lookAtCamera: true,
-    hairStyle: "Medium"
+    hairStyle: "Medium",
+    hairColor: "Brown"
   });
 
   const handleSettingChange = (key: keyof SettingsState, value: any) => {

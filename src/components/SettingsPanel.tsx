@@ -10,6 +10,7 @@ export interface SettingsState {
     aspectRatio: string;
     aspect: string; // Keep for backward compatibility or internal logic
     hairStyle: string;
+    hairColor: string;
 }
 
 interface SettingsPanelProps {
@@ -29,6 +30,18 @@ const HAIR_STYLES = [
     { id: 'Bun Hair', label: 'お団子' },
     { id: 'Twin Tail', label: 'ツインテール' },
     { id: 'Three-strand Braid', label: '三つ編み' },
+];
+
+const HAIR_COLORS = [
+    { id: 'Black', label: 'ブラック', color: '#1a1a1a' },
+    { id: 'Dark Brown', label: 'ダークブラウン', color: '#3d2b1f' },
+    { id: 'Brown', label: 'ブラウン', color: '#654321' },
+    { id: 'Light Brown', label: 'ライトブラウン', color: '#8d6e63' },
+    { id: 'Blonde', label: 'ブロンド', color: '#e6c27b' },
+    { id: 'Red', label: 'レッド', color: '#8d1d1d' },
+    { id: 'Silver', label: 'シルバー', color: '#c0c0c0' },
+    { id: 'Blue', label: 'ブルー', color: '#1e3a8a' },
+    { id: 'Pink', label: 'ピンク', color: '#f472b6' },
 ];
 
 const SCENES = [
@@ -68,7 +81,50 @@ export function SettingsPanel({ settings, onSettingChange }: SettingsPanelProps)
                 <h2 className="text-lg font-bold tracking-tight">生成設定</h2>
             </div>
 
+            <OptionSection label="ヘアカラー (髪色)" icon={<Settings className="w-4 h-4" />}>
+                <div className="grid grid-cols-3 gap-2">
+                    {HAIR_COLORS.map((color) => (
+                        <button
+                            key={color.id}
+                            onClick={() => onSettingChange('hairColor', color.id)}
+                            className={cn(
+                                "flex flex-col items-center gap-1 p-2 rounded-lg border text-xs transition-all hover:scale-[1.02]",
+                                settings.hairColor === color.id
+                                    ? "border-cyan-500/50 bg-cyan-500/10 text-cyan-400 shadow-sm"
+                                    : "border-border hover:bg-muted"
+                            )}
+                        >
+                            <div
+                                className="w-6 h-6 rounded-full border border-white/10 shadow-sm"
+                                style={{ backgroundColor: color.color }}
+                            />
+                            <span className="truncate w-full text-center">{color.label}</span>
+                        </button>
+                    ))}
+                </div>
+            </OptionSection>
+
+            <OptionSection label="ヘアスタイル (髪型)" icon={<Settings className="w-4 h-4" />}>
+                <div className="grid grid-cols-2 gap-2">
+                    {HAIR_STYLES.map((style) => (
+                        <button
+                            key={style.id}
+                            onClick={() => onSettingChange('hairStyle', style.id)}
+                            className={cn(
+                                "px-3 py-2 rounded-lg border text-sm transition-all hover:scale-[1.02]",
+                                settings.hairStyle === style.id
+                                    ? "border-cyan-500/50 bg-cyan-500/10 text-cyan-400 shadow-[0_0_10px_rgba(6,182,212,0.15)]"
+                                    : "border-border hover:bg-muted"
+                            )}
+                        >
+                            {style.label}
+                        </button>
+                    ))}
+                </div>
+            </OptionSection>
+
             <OptionSection label="シチュエーション (場所)" icon={<MapPin className="w-4 h-4" />}>
+
                 <div className="grid grid-cols-1 gap-2">
                     {SCENES.map((s) => (
                         <button
