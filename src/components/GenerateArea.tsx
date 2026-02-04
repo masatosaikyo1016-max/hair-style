@@ -71,6 +71,7 @@ export function GenerateArea({ modelImage, settings }: GenerateAreaProps) {
             formData.append('modelImage', resizedModelFile);
             formData.append('hairColor', settings.hairColor);
             formData.append('hairStyle', settings.hairStyle);
+            formData.append('gender', settings.gender);
 
             // Add fixed values for removed settings if API still needs them (or update API later)
             // For now, API might rely on defaults if they are missing, but let's be safe if API expects prompt inputs

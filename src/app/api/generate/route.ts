@@ -7,13 +7,14 @@ export async function POST(request: Request) {
         const hairColor = formData.get('hairColor') as string || "Brown";
         // ヘアスタイルを取得 (デフォルトは Medium)
         const hairStyle = formData.get('hairStyle') as string || "Medium";
+        const gender = formData.get('gender') as string || "female";
 
         console.log("--- Hair Style Generation Request Received (Server) ---");
-        console.log("Settings:", { hairColor, hairStyle });
+        console.log("Settings:", { hairColor, hairStyle, gender });
 
         if (!modelImage) {
             return NextResponse.json(
-                { error: 'モデル画像が必要です' },
+                { error: 'モデル画像が必要です。' },
                 { status: 400 }
             );
         }
@@ -29,24 +30,8 @@ export async function POST(request: Request) {
             );
         }
 
-        // Construct Prompt for Hair Color and Style Change
+        // Construct Prompt for Gemini
         const promptText = `
-        Act as a professional hair colorist and photo editor.
-        Task: Change the hair color and style of the person in the image naturally.
-        
-        Input:
-        - Target Hair Color: ${hairColor}
-        - Target Hair Style: ${hairStyle}
-        
-        Instructions:
-        1. Identify the hair region of the person in the photo accurately.
-        2. Change the hair color to "${hairColor}".
-        3. Change the hair style to "${hairStyle}".
-        4. Maintain the natural texture, lighting, and shading of the original hair.
-        5. Do NOT change the skin tone, background, or clothes.
-        6. Ensure the edges between hair and face/background are natural.
-        
-        Output Requirement:
         - Photorealistic quality.
         - Keep the original resolution and aspect ratio.
         `;

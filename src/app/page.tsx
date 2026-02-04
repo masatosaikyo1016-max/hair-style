@@ -10,12 +10,23 @@ export default function Home() {
 
   // State for all settings
   const [settings, setSettings] = useState<SettingsState>({
+    gender: "female",
     hairStyle: "Medium",
     hairColor: "Brown"
   });
 
   const handleSettingChange = (key: keyof SettingsState, value: any) => {
-    setSettings(prev => ({ ...prev, [key]: value }));
+    setSettings(prev => {
+      // If gender changes, reset hair style to default for that gender
+      if (key === 'gender' && value !== prev.gender) {
+        return {
+          ...prev,
+          [key]: value,
+          hairStyle: value === 'male' ? "Buzz Cut" : "Medium"
+        };
+      }
+      return { ...prev, [key]: value };
+    });
   };
 
   return (

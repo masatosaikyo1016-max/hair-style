@@ -3,6 +3,7 @@ import { Settings, MapPin, Sun, Camera, Eye, EyeOff, LayoutTemplate, Check } fro
 import { ReactNode } from "react";
 
 export interface SettingsState {
+    gender: 'female' | 'male';
     hairStyle: string;
     hairColor: string;
 }
@@ -12,7 +13,7 @@ interface SettingsPanelProps {
     onSettingChange: (key: keyof SettingsState, value: any) => void;
 }
 
-const HAIR_STYLES = [
+const HAIR_STYLES_FEMALE = [
     { id: 'Very Short', label: 'ベリーショート' },
     { id: 'Short', label: 'ショート' },
     { id: 'Short Bob', label: 'ショートボブ' },
@@ -26,6 +27,17 @@ const HAIR_STYLES = [
     { id: 'Three-strand Braid', label: '三つ編み' },
 ];
 
+const HAIR_STYLES_MALE = [
+    { id: 'Buzz Cut', label: '坊主' },
+    { id: 'Two Block', label: 'ツーブロック' },
+    { id: 'Mash', label: 'マッシュ' },
+    { id: 'Center Part', label: 'センターパート' },
+    { id: 'Wolf', label: 'ウルフ' },
+    { id: 'Dreadlocks', label: 'ドレッド' },
+    { id: 'Braids', label: 'ブレイズ' },
+    { id: 'Spiky Short', label: 'スパイキーショート' },
+];
+
 const HAIR_COLORS = [
     { id: 'Black', label: 'ブラック', color: '#1a1a1a' },
     { id: 'Dark Brown', label: 'ダークブラウン', color: '#3d2b1f' },
@@ -36,21 +48,6 @@ const HAIR_COLORS = [
     { id: 'Silver', label: 'シルバー', color: '#c0c0c0' },
     { id: 'Blue', label: 'ブルー', color: '#1e3a8a' },
     { id: 'Pink', label: 'ピンク', color: '#f472b6' },
-];
-
-const SCENES = [
-    { id: 'Simple Studio', label: 'シンプルスタジオ' },
-    { id: 'Urban Street', label: '街並み' },
-    { id: 'Nature Forest', label: '自然豊かな森' },
-    { id: 'Luxury Hotel', label: '高級ホテル' },
-    { id: 'Cafe Interior', label: 'カフェインテリア' },
-];
-
-const LIGHTINGS = [
-    { id: 'Natural Light', label: '自然光' },
-    { id: 'Golden Hour', label: '夕焼け' },
-    { id: 'Studio Lighting', label: 'スタジオライティング' },
-    { id: 'Night', label: 'ナイト' },
 ];
 
 function OptionSection({ label, children, icon }: { label: string; children: ReactNode; icon?: ReactNode }) {
@@ -66,6 +63,7 @@ function OptionSection({ label, children, icon }: { label: string; children: Rea
 }
 
 export function SettingsPanel({ settings, onSettingChange }: SettingsPanelProps) {
+    const currentHairStyles = settings.gender === 'male' ? HAIR_STYLES_MALE : HAIR_STYLES_FEMALE;
 
     return (
         <div className="h-full flex flex-col gap-8 overflow-y-auto pr-2 custom-scrollbar">
@@ -73,6 +71,33 @@ export function SettingsPanel({ settings, onSettingChange }: SettingsPanelProps)
                 <Settings className="w-5 h-5" />
                 <h2 className="text-lg font-bold tracking-tight">生成設定</h2>
             </div>
+
+            <OptionSection label="モデルの性別" icon={<Settings className="w-4 h-4" />}>
+                <div className="flex bg-muted p-1 rounded-xl">
+                    <button
+                        onClick={() => onSettingChange('gender', 'female')}
+                        className={cn(
+                            "flex-1 py-2 text-sm font-medium rounded-lg transition-all",
+                            settings.gender === 'female'
+                                ? "bg-background text-foreground shadow-sm"
+                                : "text-muted-foreground hover:text-foreground"
+                        )}
+                    >
+                        女性 (Female)
+                    </button>
+                    <button
+                        onClick={() => onSettingChange('gender', 'male')}
+                        className={cn(
+                            "flex-1 py-2 text-sm font-medium rounded-lg transition-all",
+                            settings.gender === 'male'
+                                ? "bg-background text-foreground shadow-sm"
+                                : "text-muted-foreground hover:text-foreground"
+                        )}
+                    >
+                        男性 (Male)
+                    </button>
+                </div>
+            </OptionSection>
 
             <OptionSection label="ヘアカラー (髪色)" icon={<Settings className="w-4 h-4" />}>
                 <div className="grid grid-cols-3 gap-2">
@@ -99,7 +124,7 @@ export function SettingsPanel({ settings, onSettingChange }: SettingsPanelProps)
 
             <OptionSection label="ヘアスタイル (髪型)" icon={<Settings className="w-4 h-4" />}>
                 <div className="grid grid-cols-2 gap-2">
-                    {HAIR_STYLES.map((style) => (
+                    {currentHairStyles.map((style) => (
                         <button
                             key={style.id}
                             onClick={() => onSettingChange('hairStyle', style.id)}
