@@ -37,9 +37,9 @@ export async function POST(request: Request) {
             Task: Change the hair style and hair color of the person in the image.
             
             Input:
-            - Target Gender: ${gender}
             - Target Hair Style: ${hairStyle}
             - Target Hair Color: ${hairColor}
+            - Style Context: ${gender} styling
             
             Instructions:
             1. Identify the person in the image.
@@ -47,7 +47,7 @@ export async function POST(request: Request) {
             3. Apply the target hair color: "${hairColor}".
             4. Ensure the new hair looks natural, realistic, and matches the lighting/head pose.
             5. STRICTLY KEEP the face, skin tone, clothing, and background EXACTLY the same.
-            6. Do not simply adjust the existing hair; transform it to match the requested style.
+            6. The new hairstyle should be typical for a ${gender}.
             
             Output Requirement:
             - Photorealistic quality.
