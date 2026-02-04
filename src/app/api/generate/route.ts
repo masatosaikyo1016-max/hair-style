@@ -31,9 +31,27 @@ export async function POST(request: Request) {
         }
 
         // Construct Prompt for Gemini
+        // Construct Prompt for Gemini
         const promptText = `
-        - Photorealistic quality.
-        - Keep the original resolution and aspect ratio.
+            Act as a professional hair stylist and photo editor.
+            Task: Change the hair style and hair color of the person in the image.
+            
+            Input:
+            - Target Gender: ${gender}
+            - Target Hair Style: ${hairStyle}
+            - Target Hair Color: ${hairColor}
+            
+            Instructions:
+            1. Identify the person in the image.
+            2. COMPLETELY REPLACE the original hair with the target style: "${hairStyle}".
+            3. Apply the target hair color: "${hairColor}".
+            4. Ensure the new hair looks natural, realistic, and matches the lighting/head pose.
+            5. STRICTLY KEEP the face, skin tone, clothing, and background EXACTLY the same.
+            6. Do not simply adjust the existing hair; transform it to match the requested style.
+            
+            Output Requirement:
+            - Photorealistic quality.
+            - Keep the original resolution and aspect ratio.
         `;
 
         const modelBuffer = Buffer.from(await modelImage.arrayBuffer());
