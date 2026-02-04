@@ -72,6 +72,16 @@ export function GenerateArea({ modelImage, settings }: GenerateAreaProps) {
             formData.append('hairColor', settings.hairColor);
             formData.append('hairStyle', settings.hairStyle);
 
+            // Add fixed values for removed settings if API still needs them (or update API later)
+            // For now, API might rely on defaults if they are missing, but let's be safe if API expects prompt inputs
+            // Actually API constructs prompt based on form data. If we removed them from UI, we should probably remove them from API usage too.
+            // But let's check GenerateArea prompt construction... wait, prompt construction was moved to Server Side in previous steps?
+            // Ah, let's check the code I'm replacing...
+            // In the previous step I cleaned up GenerateArea but it seems I might have left the prompt construction logic inside GenerateArea in my thought process?
+            // Let's check the file content first.
+            // Oh, I see the previous `replace_file_content` in Step 375/383 *removed* the client-side prompt construction and moved to server-side API call.
+            // So here I just need to remove the references in the `return` JSX (Preview Overlay).
+
             const response = await fetch('/api/generate', {
                 method: 'POST',
                 body: formData,
@@ -194,7 +204,7 @@ export function GenerateArea({ modelImage, settings }: GenerateAreaProps) {
                     // --- Preview View (Including Loading State) ---
                     <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground bg-black/20">
                         <div className="absolute inset-0 w-full h-full overflow-hidden">
-                            {/* 1. Base Layer: Model Image (Fallback) */}
+                            {/* 1. Base Layer: Model Image only */}
                             {modelImage && (
                                 // eslint-disable-next-line @next/next/no-img-element
                                 <img
@@ -202,26 +212,12 @@ export function GenerateArea({ modelImage, settings }: GenerateAreaProps) {
                                     alt="Source"
                                     className={cn(
                                         "absolute inset-0 w-full h-full object-contain transition-all duration-1000",
-                                        isLoading ? "blur-md scale-105 opacity-40" : "opacity-30 blur-sm scale-110"
+                                        isLoading ? "blur-md scale-105 opacity-40" : "opacity-100 scale-100"
                                     )}
                                 />
                             )}
 
-                            {/* 2. Overlay Layer: Scene & Lighting & ShotType & LookAt Preview */}
-                            {/* This image remains visible even during loading */}
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
-                                key={`${settings.scene}-${settings.lighting}-${settings.shotType}-${settings.lookAtCamera}`}
-                                src={`/previews/${settings.scene}_${settings.lighting}_${settings.shotType}_${settings.lookAtCamera ? 'Camera' : 'Away'}.jpg`}
-                                alt="Scene Preview"
-                                className={cn(
-                                    "absolute inset-0 w-full h-full object-contain transition-all duration-700 animate-in fade-in",
-                                    isLoading ? "opacity-80 scale-105" : "opacity-100 scale-100"
-                                )}
-                                onError={(e) => {
-                                    e.currentTarget.style.display = 'none';
-                                }}
-                            />
+                            {/* Removed Scene/Lighting Overlay */}
                         </div>
 
                         {/* Message Overlay - Switches between Preview Guide and Loading Status */}
@@ -242,9 +238,9 @@ export function GenerateArea({ modelImage, settings }: GenerateAreaProps) {
                                     </div>
                                 ) : (
                                     <p className="text-sm font-medium leading-relaxed">
-                                        <span className="font-bold block mb-1 text-base">プレビュー画面</span>
-                                        あなたの選択ですと以上のイメージで生成が行われます。<br />
-                                        生成結果では、ユーザーの選択したモデル画像を参照して生成されます。ご安心ください。
+                                        <span className="font-bold block mb-1 text-base">準備完了</span>
+                                        モデル画像のアップロードと設定が完了しました。<br />
+                                        GENERATEボタンを押して生成を開始してください。
                                     </p>
                                 )}
                             </div>

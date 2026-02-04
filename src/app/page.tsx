@@ -10,12 +10,6 @@ export default function Home() {
 
   // State for all settings
   const [settings, setSettings] = useState<SettingsState>({
-    aspect: "3:4",
-    aspectRatio: "3:4", // Add this field to match SettingsState interface
-    scene: "Simple Studio",
-    lighting: "Natural Light",
-    shotType: "Waist-Up",
-    lookAtCamera: true,
     hairStyle: "Medium",
     hairColor: "Brown"
   });
