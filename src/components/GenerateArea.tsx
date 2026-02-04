@@ -8,12 +8,10 @@ import { SettingsState } from "./SettingsPanel";
 
 interface GenerateAreaProps {
     modelImage: File | null;
-    garmentImage: File | null;
-    bottomsImage: File | null;
     settings: SettingsState;
 }
 
-export function GenerateArea({ modelImage, garmentImage, bottomsImage, settings }: GenerateAreaProps) {
+export function GenerateArea({ modelImage, settings }: GenerateAreaProps) {
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [isGenerating, setIsGenerating] = useState(false);
     const [generatedImage, setGeneratedImage] = useState<string | null>(null);
@@ -38,21 +36,19 @@ export function GenerateArea({ modelImage, garmentImage, bottomsImage, settings 
     const handleGenerate = async () => {
         console.log("Starting Client-Side Generation (v20250106)...");
 
-        if (!modelImage || (!garmentImage && !bottomsImage)) {
-            alert("生成を開始するには、「モデル画像」と、少なくとも1つの「服装画像（トップスまたはボトムス）」をアップロードしてください。");
+        if (!modelImage) {
+            alert("生成を開始するには、「モデル画像」をアップロードしてください。");
             return;
         }
 
         // Phase 1: Image Analysis
         setIsAnalyzing(true);
-        setAnalysisStep("モデルの顔の特徴を検出中...");
+        setAnalysisStep("髪の領域を検出中...");
 
         try {
             // Simulate Analysis Steps for UX
-            await new Promise(r => setTimeout(r, 1500));
-            setAnalysisStep("服装の構造を解析中...");
-            await new Promise(r => setTimeout(r, 1500));
-            setAnalysisStep("ポーズとライティングを計算中...");
+            await new Promise(r => setTimeout(r, 1000));
+            setAnalysisStep("髪質と光の反射を解析中...");
             await new Promise(r => setTimeout(r, 1000));
 
             setIsAnalyzing(false);
@@ -60,136 +56,48 @@ export function GenerateArea({ modelImage, garmentImage, bottomsImage, settings 
 
             // Determine aspect ratio from settings
             let aspectRatio = "3:4";
-            if (settings.aspectRatio) {
-                const match = settings.aspectRatio.match(/\((\d+:\d+)\)/);
-                if (match) {
-                    aspectRatio = match[1];
-                } else if (settings.aspectRatio.includes(":")) {
-                    aspectRatio = settings.aspectRatio;
-                }
-            } else if (settings.aspect) {
-                // Fallback to aspect if available
-                if (settings.aspect.includes(":")) {
-                    aspectRatio = settings.aspect;
-                }
-            }
 
             // --- Client-Side Crop & Resize ---
-            // 1. Crop original image to aspect ratio first
             console.log(`Cropping model image to ${aspectRatio}...`);
             const croppedModelFile = await cropImage(modelImage, aspectRatio);
 
             // 2. Resize to optimal size for Gemini (e.g. max 1536px)
             const resizedModelFile = await resizeImage(croppedModelFile, 1536, 1536);
-            const resizedModelBase64 = await fileToBase64(resizedModelFile);
 
-            // Helper for resizing other images
-            const processImage = async (file: File) => {
-                const resized = await resizeImage(file); // From utils: max 800px, quality 0.6
-                return await fileToBase64(resized);
-            };
+            console.log("Calling Server-side API...");
 
-            // Construct Prompt
-            let prompt = `
-            Act as a professional fashion photographer.
-            Task: Create a realistic "Virtual Try-On" photo.
-            
-            Input:
-            - Model: Use this person's pose and features as the base.
-            - Garment: The clothing to be worn by the model.
-            ${bottomsImage ? '- Bottoms: The pants/skirt to be worn.' : ''}
-            
-            Instructions:
-            1. Dress the model in the provided garment(s) naturally.
-            2. Match wrinkles, fabric physics, and lighting to the scene.
-            3. Keep the model's pose and facial features consistent with the original photo.
-            4. Background: ${settings.scene}.
-            5. Lighting: ${settings.lighting}.
-            6. Shot: ${settings.shotType}.
-            7. Eye Contact: ${settings.lookAtCamera ? "Looking at camera" : "Looking away"}.
-            
-            Output Requirement:
-            - Photorealistic quality (8k).
-            - Aspect Ratio: ${aspectRatio}.
-            `;
+            // Prepare FormData for Server API
+            const formData = new FormData();
+            formData.append('modelImage', resizedModelFile);
+            formData.append('hairColor', settings.hairColor);
+            formData.append('hairStyle', settings.hairStyle);
 
-            const contentsParts: any[] = [
-                { text: prompt }
-            ];
-
-            // Model image
-            contentsParts.push({ inline_data: { mime_type: "image/jpeg", data: resizedModelBase64 } });
-
-            if (garmentImage) {
-                const garmentBase64Processed = await processImage(garmentImage);
-                contentsParts.push({
-                    inline_data: { mime_type: "image/jpeg", data: garmentBase64Processed }
-                });
-            }
-
-            if (bottomsImage) {
-                const bottomsBase64Processed = await processImage(bottomsImage);
-                contentsParts.push({
-                    inline_data: { mime_type: "image/jpeg", data: bottomsBase64Processed }
-                });
-            }
-
-            // 4. Call Google API Directly
-            const apiKey = "AIzaSyCymikEwW8Flfs9VDKTJgfvveCJCiK8jjw"; // Used directly on client as per user agreement
-
-            // !! USER REQUEST: KEEP GEMINI 2.5 !!
-            const targetUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=${apiKey}`;
-
-            const response = await fetch(targetUrl, {
+            const response = await fetch('/api/generate', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    contents: [{ parts: contentsParts }],
-                    generationConfig: {
-                        temperature: 0.4,
-                        topK: 32,
-                        topP: 1,
-                        maxOutputTokens: 2048,
-                    },
-                    safetySettings: [
-                        { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
-                        { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
-                        { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
-                        { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }
-                    ]
-                }),
+                body: formData,
             });
 
             if (!response.ok) {
                 const errorText = await response.text();
-                // Throw detailed error with status code
-                throw new Error(`Google API Error (${response.status}): ${errorText}`);
+                try {
+                    const errorJson = JSON.parse(errorText);
+                    throw new Error(errorJson.error || `Server Error (${response.status})`);
+                } catch (e: any) {
+                    if (e.message && e.message.startsWith("Server Error") && !e.message.includes(":")) throw e;
+                    throw new Error(`Server Error (${response.status}): ${errorText}`);
+                }
             }
 
             const data = await response.json();
-            const parts = data.candidates?.[0]?.content?.parts || [];
-
-            // Search for the image part in all parts (model might return text + image)
-            const imagePart = parts.find((p: any) => p.inlineData || p.inline_data);
-            const inlineData = imagePart?.inlineData || imagePart?.inline_data;
-
-            if (inlineData?.data) {
-                const base64Result = inlineData.data;
-                const mimeType = inlineData.mimeType || inlineData.mime_type || "image/jpeg";
-                setGeneratedImage(`data:${mimeType};base64,${base64Result}`);
+            if (data.imageUrl) {
+                setGeneratedImage(data.imageUrl);
             } else {
-                // If no image found, check for text explanation
-                const textPart = parts.find((p: any) => p.text);
-                if (textPart?.text) {
-                    throw new Error(`画像生成が拒否されました (Text Response): ${textPart.text}`);
-                }
-                throw new Error("予期しないAPI応答形式です。画像データが含まれていません。");
+                throw new Error("画像の生成に失敗しました (Image URL missing)");
             }
 
         } catch (error) {
             console.error("Generation error:", error);
             const errorMessage = error instanceof Error ? error.message : "不明なエラー";
-            // Alert with DETAILS so we can debug
             alert(`画像の生成に失敗しました。\n\n【エラー詳細】\n${errorMessage}`);
         } finally {
             setIsAnalyzing(false);
