@@ -8,10 +8,12 @@ import { SettingsState } from "./SettingsPanel";
 
 interface GenerateAreaProps {
     modelImage: File | null;
+    garmentImage: File | null;
+    bottomsImage: File | null;
     settings: SettingsState;
 }
 
-export function GenerateArea({ modelImage, settings }: GenerateAreaProps) {
+export function GenerateArea({ modelImage, garmentImage, bottomsImage, settings }: GenerateAreaProps) {
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [isGenerating, setIsGenerating] = useState(false);
     const [generatedImage, setGeneratedImage] = useState<string | null>(null);
@@ -34,21 +36,23 @@ export function GenerateArea({ modelImage, settings }: GenerateAreaProps) {
     };
 
     const handleGenerate = async () => {
-        console.log("Starting Client-Side Generation (Hair Style Mode)...");
+        console.log("Starting Client-Side Generation (v20250106)...");
 
-        if (!modelImage) {
-            alert("生成を開始するには、「モデル画像」をアップロードしてください。");
+        if (!modelImage || (!garmentImage && !bottomsImage)) {
+            alert("生成を開始するには、「モデル画像」と、少なくとも1つの「服装画像（トップスまたはボトムス）」をアップロードしてください。");
             return;
         }
 
         // Phase 1: Image Analysis
         setIsAnalyzing(true);
-        setAnalysisStep("髪の領域を検出中...");
+        setAnalysisStep("モデルの顔の特徴を検出中...");
 
         try {
             // Simulate Analysis Steps for UX
-            await new Promise(r => setTimeout(r, 1000));
-            setAnalysisStep("髪質と光の反射を解析中...");
+            await new Promise(r => setTimeout(r, 1500));
+            setAnalysisStep("服装の構造を解析中...");
+            await new Promise(r => setTimeout(r, 1500));
+            setAnalysisStep("ポーズとライティングを計算中...");
             await new Promise(r => setTimeout(r, 1000));
 
             setIsAnalyzing(false);
@@ -56,6 +60,19 @@ export function GenerateArea({ modelImage, settings }: GenerateAreaProps) {
 
             // Determine aspect ratio from settings
             let aspectRatio = "3:4";
+            if (settings.aspectRatio) {
+                const match = settings.aspectRatio.match(/\((\d+:\d+)\)/);
+                if (match) {
+                    aspectRatio = match[1];
+                } else if (settings.aspectRatio.includes(":")) {
+                    aspectRatio = settings.aspectRatio;
+                }
+            } else if (settings.aspect) {
+                // Fallback to aspect if available
+                if (settings.aspect.includes(":")) {
+                    aspectRatio = settings.aspect;
+                }
+            }
 
             // --- Client-Side Crop & Resize ---
             // 1. Crop original image to aspect ratio first
@@ -64,32 +81,109 @@ export function GenerateArea({ modelImage, settings }: GenerateAreaProps) {
 
             // 2. Resize to optimal size for Gemini (e.g. max 1536px)
             const resizedModelFile = await resizeImage(croppedModelFile, 1536, 1536);
-            // const resizedModelBase64 = await fileToBase64(resizedModelFile); // Base64 conversion not needed for FormData
+            const resizedModelBase64 = await fileToBase64(resizedModelFile);
 
-            console.log("Calling Server-side API...");
+            // Helper for resizing other images
+            const processImage = async (file: File) => {
+                const resized = await resizeImage(file); // From utils: max 800px, quality 0.6
+                return await fileToBase64(resized);
+            };
 
-            // Prepare FormData for Server API
-            const formData = new FormData();
-            formData.append('modelImage', resizedModelFile);
-            formData.append('hairColor', settings.hairColor);
+            // Construct Prompt
+            let prompt = `
+            Act as a professional fashion photographer.
+            Task: Create a realistic "Virtual Try-On" photo.
+            
+            Input:
+            - Model: Use this person's pose and features as the base.
+            - Garment: The clothing to be worn by the model.
+            ${bottomsImage ? '- Bottoms: The pants/skirt to be worn.' : ''}
+            
+            Instructions:
+            1. Dress the model in the provided garment(s) naturally.
+            2. Match wrinkles, fabric physics, and lighting to the scene.
+            3. Keep the model's pose and facial features consistent with the original photo.
+            4. Background: ${settings.scene}.
+            5. Lighting: ${settings.lighting}.
+            6. Shot: ${settings.shotType}.
+            7. Eye Contact: ${settings.lookAtCamera ? "Looking at camera" : "Looking away"}.
+            
+            Output Requirement:
+            - Photorealistic quality (8k).
+            - Aspect Ratio: ${aspectRatio}.
+            `;
 
-            const response = await fetch('/api/generate', {
+            const contentsParts: any[] = [
+                { text: prompt }
+            ];
+
+            // Model image
+            contentsParts.push({ inline_data: { mime_type: "image/jpeg", data: resizedModelBase64 } });
+
+            if (garmentImage) {
+                const garmentBase64Processed = await processImage(garmentImage);
+                contentsParts.push({
+                    inline_data: { mime_type: "image/jpeg", data: garmentBase64Processed }
+                });
+            }
+
+            if (bottomsImage) {
+                const bottomsBase64Processed = await processImage(bottomsImage);
+                contentsParts.push({
+                    inline_data: { mime_type: "image/jpeg", data: bottomsBase64Processed }
+                });
+            }
+
+            // 4. Call Google API Directly
+            const apiKey = "AIzaSyCymikEwW8Flfs9VDKTJgfvveCJCiK8jjw"; // Used directly on client as per user agreement
+
+            // !! USER REQUEST: KEEP GEMINI 2.5 !!
+            const targetUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=${apiKey}`;
+
+            const response = await fetch(targetUrl, {
                 method: 'POST',
-                body: formData,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{ parts: contentsParts }],
+                    generationConfig: {
+                        temperature: 0.4,
+                        topK: 32,
+                        topP: 1,
+                        maxOutputTokens: 2048,
+                    },
+                    safetySettings: [
+                        { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
+                        { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
+                        { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
+                        { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }
+                    ]
+                }),
             });
 
             if (!response.ok) {
-                const errorData = await response.json();
-                console.error("Server API Error:", response.status, errorData);
-                throw new Error(errorData.error || `Server Error (${response.status})`);
+                const errorText = await response.text();
+                // Throw detailed error with status code
+                throw new Error(`Google API Error (${response.status}): ${errorText}`);
             }
 
             const data = await response.json();
+            const parts = data.candidates?.[0]?.content?.parts || [];
 
-            if (data.imageUrl) {
-                setGeneratedImage(data.imageUrl);
+            // Search for the image part in all parts (model might return text + image)
+            const imagePart = parts.find((p: any) => p.inlineData || p.inline_data);
+            const inlineData = imagePart?.inlineData || imagePart?.inline_data;
+
+            if (inlineData?.data) {
+                const base64Result = inlineData.data;
+                const mimeType = inlineData.mimeType || inlineData.mime_type || "image/jpeg";
+                setGeneratedImage(`data:${mimeType};base64,${base64Result}`);
             } else {
-                throw new Error("予期しないサーバー応答: 画像データが含まれていません。");
+                // If no image found, check for text explanation
+                const textPart = parts.find((p: any) => p.text);
+                if (textPart?.text) {
+                    throw new Error(`画像生成が拒否されました (Text Response): ${textPart.text}`);
+                }
+                throw new Error("予期しないAPI応答形式です。画像データが含まれていません。");
             }
 
         } catch (error) {
@@ -108,22 +202,38 @@ export function GenerateArea({ modelImage, settings }: GenerateAreaProps) {
         setGeneratedImage(null);
     };
 
-    const handleSave = () => {
+    const handleSave = async () => {
         if (!generatedImage) return;
 
         setIsSaving(true);
         try {
             const timestamp = new Date().getTime();
             const filename = `generated_${timestamp}.jpg`;
+            const response = await fetch(generatedImage);
+            const blob = await response.blob();
+            const formData = new FormData();
+            formData.append('file', blob, filename);
+            formData.append('hairStyle', settings.hairStyle);
+            const saveResponse = await fetch('/api/save-image', {
+                method: 'POST',
+                body: formData,
+            });
 
-            // Direct client-side download
-            const link = document.createElement('a');
-            link.href = generatedImage;
-            link.download = filename;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-
+            if (saveResponse.ok) {
+                const link = document.createElement('a');
+                link.href = generatedImage;
+                link.download = filename;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            } else {
+                const link = document.createElement('a');
+                link.href = generatedImage;
+                link.download = filename;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
         } catch (error) {
             console.error('Save failed:', error);
             alert("保存に失敗しました。");
@@ -189,16 +299,30 @@ export function GenerateArea({ modelImage, settings }: GenerateAreaProps) {
                                 />
                             )}
 
-                            {/* 2. Overlay Layer REMOVED */}
+                            {/* 2. Overlay Layer: Scene & Lighting & ShotType & LookAt Preview */}
+                            {/* This image remains visible even during loading */}
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                                key={`${settings.scene}-${settings.lighting}-${settings.shotType}-${settings.lookAtCamera}`}
+                                src={`/previews/${settings.scene}_${settings.lighting}_${settings.shotType}_${settings.lookAtCamera ? 'Camera' : 'Away'}.jpg`}
+                                alt="Scene Preview"
+                                className={cn(
+                                    "absolute inset-0 w-full h-full object-contain transition-all duration-700 animate-in fade-in",
+                                    isLoading ? "opacity-80 scale-105" : "opacity-100 scale-100"
+                                )}
+                                onError={(e) => {
+                                    e.currentTarget.style.display = 'none';
+                                }}
+                            />
                         </div>
 
                         {/* Message Overlay - Switches between Preview Guide and Loading Status */}
                         <div className="absolute bottom-6 left-6 right-6 z-20 transition-all duration-500">
                             <div className={cn(
                                 "backdrop-blur-sm border rounded-xl p-4 shadow-lg text-center transition-colors duration-500",
-                                isLoading ? "bg-black/70 border-white/20 text-white" : "hidden"
+                                isLoading ? "bg-black/70 border-white/20 text-white" : "bg-white/90 border-black/10 text-black"
                             )}>
-                                {isLoading && (
+                                {isLoading ? (
                                     <div className="flex flex-col items-center gap-2">
                                         <Sparkles className="w-6 h-6 animate-pulse text-cyan-400" />
                                         <p className="text-sm font-medium leading-relaxed animate-pulse">
@@ -208,6 +332,12 @@ export function GenerateArea({ modelImage, settings }: GenerateAreaProps) {
                                             {isAnalyzing ? analysisStep : "最高の一枚を作成しています。しばらくお待ちください。"}
                                         </p>
                                     </div>
+                                ) : (
+                                    <p className="text-sm font-medium leading-relaxed">
+                                        <span className="font-bold block mb-1 text-base">プレビュー画面</span>
+                                        あなたの選択ですと以上のイメージで生成が行われます。<br />
+                                        生成結果では、ユーザーの選択したモデル画像を参照して生成されます。ご安心ください。
+                                    </p>
                                 )}
                             </div>
                         </div>

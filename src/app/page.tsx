@@ -10,10 +10,15 @@ export default function Home() {
   const [garmentImage, setGarmentImage] = useState<File | null>(null);
   const [bottomsImage, setBottomsImage] = useState<File | null>(null);
 
+  // State for all settings
   const [settings, setSettings] = useState<SettingsState>({
     aspect: "3:4",
-    aspectRatio: "3:4",
-    hairColor: "Brown",
+    aspectRatio: "3:4", // Add this field to match SettingsState interface
+    scene: "Simple Studio",
+    lighting: "Natural Light",
+    shotType: "Waist-Up",
+    lookAtCamera: true,
+    hairStyle: "Medium"
   });
 
   const handleSettingChange = (key: keyof SettingsState, value: any) => {
@@ -35,6 +40,8 @@ export default function Home() {
           <h3 className="text-sm font-semibold text-muted-foreground mb-4 uppercase tracking-wider">Input Assets</h3>
           <UploadZone
             onModelSelect={setModelImage}
+            onGarmentSelect={setGarmentImage}
+            onBottomsSelect={setBottomsImage}
           />
         </section>
 
@@ -47,6 +54,8 @@ export default function Home() {
       <div className="flex-1 w-full min-h-[500px] md:min-h-0 md:h-full md:overflow-y-auto custom-scrollbar">
         <GenerateArea
           modelImage={modelImage}
+          garmentImage={garmentImage}
+          bottomsImage={bottomsImage}
           settings={settings}
         />
       </div>

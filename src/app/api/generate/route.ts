@@ -5,9 +5,11 @@ export async function POST(request: Request) {
         const formData = await request.formData();
         const modelImage = formData.get('modelImage') as File;
         const hairColor = formData.get('hairColor') as string || "Brown";
+        // ヘアスタイルを取得 (デフォルトは Medium)
+        const hairStyle = formData.get('hairStyle') as string || "Medium";
 
         console.log("--- Hair Style Generation Request Received (Server) ---");
-        console.log("Settings:", { hairColor });
+        console.log("Settings:", { hairColor, hairStyle });
 
         if (!modelImage) {
             return NextResponse.json(
@@ -19,11 +21,6 @@ export async function POST(request: Request) {
         // サーバーサイドでAPIキーを取得 (環境変数)
         const apiKey = process.env.GEMINI_API_KEY;
 
-        console.log("--- Debug: Environment Check ---");
-        console.log("Is API Key present?", apiKey ? "YES" : "NO");
-        if (apiKey) console.log("API Key length:", apiKey.length);
-        console.log("Current Environment:", process.env.NODE_ENV);
-
         if (!apiKey) {
             console.error("API Key is missing in server environment");
             return NextResponse.json(
@@ -32,20 +29,22 @@ export async function POST(request: Request) {
             );
         }
 
-        // Construct Prompt for Hair Color Change
+        // Construct Prompt for Hair Color and Style Change
         const promptText = `
         Act as a professional hair colorist and photo editor.
-        Task: Change the hair color of the person in the image naturally.
+        Task: Change the hair color and style of the person in the image naturally.
         
         Input:
         - Target Hair Color: ${hairColor}
+        - Target Hair Style: ${hairStyle}
         
         Instructions:
         1. Identify the hair region of the person in the photo accurately.
         2. Change the hair color to "${hairColor}".
-        3. Maintain the natural texture, lighting, and shading of the original hair.
-        4. Do NOT change the skin tone, background, or clothes.
-        5. Ensure the edges between hair and face/background are natural.
+        3. Change the hair style to "${hairStyle}".
+        4. Maintain the natural texture, lighting, and shading of the original hair.
+        5. Do NOT change the skin tone, background, or clothes.
+        6. Ensure the edges between hair and face/background are natural.
         
         Output Requirement:
         - Photorealistic quality.
@@ -62,7 +61,7 @@ export async function POST(request: Request) {
 
         console.log("Calling Gemini API (Server-side)...");
 
-        // Use the model that was previously working for the user
+        // Use the model compatible with image generation/editing
         const targetUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=${apiKey}`;
 
         const apiResponse = await fetch(targetUrl, {

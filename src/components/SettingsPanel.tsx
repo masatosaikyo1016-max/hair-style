@@ -1,11 +1,15 @@
 import { cn } from "@/lib/utils";
-import { Settings, Palette, Check } from "lucide-react";
+import { Settings, MapPin, Sun, Camera, Eye, EyeOff, LayoutTemplate, Check } from "lucide-react";
 import { ReactNode } from "react";
 
 export interface SettingsState {
-    hairColor: string;
-    aspectRatio: string; // Keep for layout consistency
-    aspect: string;
+    scene: string;
+    lighting: string;
+    shotType: string;
+    lookAtCamera: boolean;
+    aspectRatio: string;
+    aspect: string; // Keep for backward compatibility or internal logic
+    hairStyle: string;
 }
 
 interface SettingsPanelProps {
@@ -13,15 +17,33 @@ interface SettingsPanelProps {
     onSettingChange: (key: keyof SettingsState, value: any) => void;
 }
 
-const HAIR_COLORS = [
-    { id: 'Blonde', label: 'ブロンド', color: '#F0E68C' },
-    { id: 'Black', label: 'ブラック', color: '#1a1a1a' },
-    { id: 'Brown', label: 'ブラウン', color: '#8B4513' },
-    { id: 'Red', label: 'レッド', color: '#800000' },
-    { id: 'Silver', label: 'シルバー', color: '#C0C0C0' },
-    { id: 'Pink', label: 'ピンク', color: '#FFB6C1' },
-    { id: 'Blue', label: 'ブルー', color: '#4169E1' },
-    { id: 'Green', label: 'グリーン', color: '#2E8B57' },
+const HAIR_STYLES = [
+    { id: 'Very Short', label: 'ベリーショート' },
+    { id: 'Short', label: 'ショート' },
+    { id: 'Short Bob', label: 'ショートボブ' },
+    { id: 'Medium', label: 'ミディアム' },
+    { id: 'Semi-Long', label: 'セミロング' },
+    { id: 'Long', label: 'ロング' },
+    { id: 'Ponytail', label: 'ポニーテール' },
+    { id: 'Half Up', label: 'ハーフアップ' },
+    { id: 'Bun Hair', label: 'お団子' },
+    { id: 'Twin Tail', label: 'ツインテール' },
+    { id: 'Three-strand Braid', label: '三つ編み' },
+];
+
+const SCENES = [
+    { id: 'Simple Studio', label: 'シンプルスタジオ' },
+    { id: 'Urban Street', label: '街並み' },
+    { id: 'Nature Forest', label: '自然豊かな森' },
+    { id: 'Luxury Hotel', label: '高級ホテル' },
+    { id: 'Cafe Interior', label: 'カフェインテリア' },
+];
+
+const LIGHTINGS = [
+    { id: 'Natural Light', label: '自然光' },
+    { id: 'Golden Hour', label: '夕焼け' },
+    { id: 'Studio Lighting', label: 'スタジオライティング' },
+    { id: 'Night', label: 'ナイト' },
 ];
 
 function OptionSection({ label, children, icon }: { label: string; children: ReactNode; icon?: ReactNode }) {
@@ -37,48 +59,148 @@ function OptionSection({ label, children, icon }: { label: string; children: Rea
 }
 
 export function SettingsPanel({ settings, onSettingChange }: SettingsPanelProps) {
-    const { hairColor } = settings;
+    const { scene, lighting, shotType, lookAtCamera, aspectRatio } = settings;
 
     return (
         <div className="h-full flex flex-col gap-8 overflow-y-auto pr-2 custom-scrollbar">
             <div className="flex items-center gap-2 pb-4 border-b border-border">
                 <Settings className="w-5 h-5" />
-                <h2 className="text-lg font-bold tracking-tight">スタイル設定</h2>
+                <h2 className="text-lg font-bold tracking-tight">生成設定</h2>
             </div>
 
-            <OptionSection label="ヘアカラー (髪色)" icon={<Palette className="w-4 h-4" />}>
-                <div className="grid grid-cols-1 gap-2"> {/* Use single column like Scenes for better visibility */}
-                    {HAIR_COLORS.map((color) => (
+            <OptionSection label="シチュエーション (場所)" icon={<MapPin className="w-4 h-4" />}>
+                <div className="grid grid-cols-1 gap-2">
+                    {SCENES.map((s) => (
                         <button
-                            key={color.id}
-                            onClick={() => onSettingChange('hairColor', color.id)}
+                            key={s.id}
+                            onClick={() => onSettingChange('scene', s.id)}
                             className={cn(
                                 "w-full text-left px-4 py-3 rounded-xl border transition-all duration-200 flex items-center justify-between group",
-                                hairColor === color.id
+                                scene === s.id
                                     ? "bg-foreground text-background border-foreground shadow-md"
                                     : "bg-muted/50 border-transparent hover:bg-muted hover:border-border"
                             )}
                         >
-                            <div className="flex items-center gap-3">
-                                <span className={cn(
-                                    "w-3 h-3 rounded-full shadow-sm",
-                                    hairColor === color.id ? "ring-2 ring-background" : ""
-                                )} style={{ backgroundColor: color.color }}></span>
-                                <span className="font-medium text-sm">{color.label}</span>
-                            </div>
-                            {hairColor === color.id && <div className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />}
+                            <span className="font-medium text-sm">{s.label}</span>
+                            {scene === s.id && <div className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />}
                         </button>
                     ))}
                 </div>
             </OptionSection>
 
-            <div className="p-4 rounded-xl bg-blue-500/10 border border-blue-500/20 text-xs text-muted-foreground leading-relaxed">
-                <p>
-                    <span className="font-bold text-blue-400 block mb-1">Tips for Pro</span>
-                    自然な仕上がりにするために、元の髪型と光の当たり方を解析して色を適用します。
-                </p>
+            <OptionSection label="ライティング" icon={<Sun className="w-4 h-4" />}>
+                <div className="grid grid-cols-2 gap-2">
+                    {LIGHTINGS.map((l) => (
+                        <button
+                            key={l.id}
+                            onClick={() => onSettingChange('lighting', l.id)}
+                            className={cn(
+                                "px-3 py-2 rounded-lg border text-sm transition-all hover:scale-[1.02]",
+                                lighting === l.id
+                                    ? "border-cyan-500/50 bg-cyan-500/10 text-cyan-400 shadow-[0_0_10px_rgba(6,182,212,0.15)]"
+                                    : "border-border hover:bg-muted"
+                            )}
+                        >
+                            {l.label}
+                        </button>
+                    ))}
+                </div>
+            </OptionSection>
+
+            <OptionSection label="アングル (画角)" icon={<Camera className="w-4 h-4" />}>
+                <div className="flex gap-2">
+                    <button
+                        onClick={() => onSettingChange('shotType', 'Waist-Up')}
+                        className={cn(
+                            "flex-1 py-2 px-3 rounded-lg border text-sm text-center hover:bg-muted transition-colors flex items-center justify-center gap-2 group",
+                            shotType === 'Waist-Up' ? "border-foreground bg-muted/30" : "border-border"
+                        )}
+                    >
+                        <span>腰から上</span>
+                        {shotType === 'Waist-Up' && <Check className="w-3 h-3" />}
+                    </button>
+                    <button
+                        onClick={() => onSettingChange('shotType', 'Full Body')}
+                        className={cn(
+                            "flex-1 py-2 px-3 rounded-lg border text-sm text-center hover:bg-muted transition-colors flex items-center justify-center gap-2 group",
+                            shotType === 'Full Body' ? "border-foreground bg-muted/30" : "border-border"
+                        )}
+                    >
+                        <span>全身</span>
+                        {shotType === 'Full Body' && <Check className="w-3 h-3" />}
+                    </button>
+                </div>
+            </OptionSection>
+
+            <OptionSection label="詳細設定">
+                <button
+                    onClick={() => onSettingChange('lookAtCamera', !lookAtCamera)}
+                    className="flex items-center justify-between w-full p-3 rounded-lg border border-border hover:bg-muted transition-all"
+                >
+                    <div className="flex items-center gap-3">
+                        {lookAtCamera ? <Eye className="w-4 h-4 text-foreground" /> : <EyeOff className="w-4 h-4 text-muted-foreground" />}
+                        <span className="text-sm font-medium">カメラ目線</span>
+                    </div>
+                    <div className={cn(
+                        "w-10 h-6 rounded-full p-1 transition-colors relative",
+                        lookAtCamera ? "bg-foreground" : "bg-muted-foreground/20"
+                    )}>
+                        <div className={cn(
+                            "w-4 h-4 rounded-full bg-background transition-transform",
+                            lookAtCamera ? "translate-x-4" : "translate-x-0"
+                        )} />
+                    </div>
+                </button>
+            </OptionSection>
+
+            <OptionSection label="ヘアスタイル (髪型)" icon={<Settings className="w-4 h-4" />}>
+                <div className="grid grid-cols-2 gap-2">
+                    {HAIR_STYLES.map((style) => (
+                        <button
+                            key={style.id}
+                            onClick={() => onSettingChange('hairStyle', style.id)}
+                            className={cn(
+                                "px-3 py-2 rounded-lg border text-sm transition-all hover:scale-[1.02]",
+                                settings.hairStyle === style.id
+                                    ? "border-cyan-500/50 bg-cyan-500/10 text-cyan-400 shadow-[0_0_10px_rgba(6,182,212,0.15)]"
+                                    : "border-border hover:bg-muted"
+                            )}
+                        >
+                            {style.label}
+                        </button>
+                    ))}
+                </div>
+            </OptionSection>
+
+            {/* Preview Section on Settings Panel */}
+            <div className="mt-8 pt-6 border-t border-border">
+                <h3 className="text-sm font-bold mb-4 flex items-center gap-2 text-foreground">
+                    <span className="w-1 h-4 bg-cyan-500 rounded-full"></span>
+                    仕上がりイメージ
+                </h3>
+
+                <div className="rounded-xl border border-border bg-card overflow-hidden shadow-sm">
+                    <div className="relative w-full aspect-[3/4] bg-black/5">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                            key={`${scene}-${lighting}-${shotType}-${lookAtCamera}`}
+                            src={`/previews/${scene}_${lighting}_${shotType}_${lookAtCamera ? 'Camera' : 'Away'}.jpg`}
+                            alt="Settings Preview"
+                            className="w-full h-full object-contain animate-in fade-in duration-500"
+                            onError={(e) => {
+                                e.currentTarget.style.opacity = '0';
+                            }}
+                        />
+                    </div>
+                    <div className="p-3 bg-muted/30 border-t border-border">
+                        <p className="text-xs text-muted-foreground leading-relaxed">
+                            <span className="font-semibold text-foreground block mb-1">プレビュー画面</span>
+                            あなたの選択ですと以上のイメージで生成が行われます。<br />
+                            生成結果では、ユーザーの選択したモデル画像を参照して生成されます。ご安心ください。
+                        </p>
+                    </div>
+                </div>
             </div>
         </div>
     );
 }
-

@@ -1,36 +1,51 @@
-
 "use client";
 
 import { cn } from "@/lib/utils";
-import { Upload, X, Info, ScanFace } from "lucide-react";
+import { Upload, X, Image as ImageIcon, Shirt, Info, ScanFace } from "lucide-react";
 import { useState, useCallback, useRef } from "react";
 
 interface UploadZoneProps {
     onModelSelect: (file: File | null) => void;
+    onGarmentSelect: (file: File | null) => void;
+    onBottomsSelect: (file: File | null) => void;
 }
 
-export function UploadZone({ onModelSelect }: UploadZoneProps) {
+export function UploadZone({ onModelSelect, onGarmentSelect, onBottomsSelect }: UploadZoneProps) {
     const [modelFile, setModelFile] = useState<File | null>(null);
+    const [garmentFile, setGarmentFile] = useState<File | null>(null);
+    const [bottomsFile, setBottomsFile] = useState<File | null>(null);
 
     // Preview URLs
     const [modelPreview, setModelPreview] = useState<string | null>(null);
+    const [garmentPreview, setGarmentPreview] = useState<string | null>(null);
+    const [bottomsPreview, setBottomsPreview] = useState<string | null>(null);
 
-    const handleFileSelect = useCallback((file: File) => {
+    const handleFileSelect = useCallback((file: File, type: 'model' | 'garment' | 'bottoms') => {
         const reader = new FileReader();
         reader.onloadend = () => {
             const result = reader.result as string;
-            setModelFile(file);
-            setModelPreview(result);
-            onModelSelect(file);
+            if (type === 'model') {
+                setModelFile(file);
+                setModelPreview(result);
+                onModelSelect(file);
+            } else if (type === 'garment') {
+                setGarmentFile(file);
+                setGarmentPreview(result);
+                onGarmentSelect(file);
+            } else {
+                setBottomsFile(file);
+                setBottomsPreview(result);
+                onBottomsSelect(file);
+            }
         };
         reader.readAsDataURL(file);
-    }, [onModelSelect]);
+    }, [onModelSelect, onGarmentSelect, onBottomsSelect]);
 
-    const handleDrop = useCallback((e: React.DragEvent) => {
+    const handleDrop = useCallback((e: React.DragEvent, type: 'model' | 'garment' | 'bottoms') => {
         e.preventDefault();
         e.stopPropagation();
         if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-            handleFileSelect(e.dataTransfer.files[0]);
+            handleFileSelect(e.dataTransfer.files[0], type);
         }
     }, [handleFileSelect]);
 
@@ -39,17 +54,29 @@ export function UploadZone({ onModelSelect }: UploadZoneProps) {
         e.stopPropagation();
     };
 
-    const removeFile = () => {
-        setModelFile(null);
-        setModelPreview(null);
-        onModelSelect(null);
+    const removeFile = (type: 'model' | 'garment' | 'bottoms') => {
+        if (type === 'model') {
+            setModelFile(null);
+            setModelPreview(null);
+            onModelSelect(null);
+        } else if (type === 'garment') {
+            setGarmentFile(null);
+            setGarmentPreview(null);
+            onGarmentSelect(null);
+        } else {
+            setBottomsFile(null);
+            setBottomsPreview(null);
+            onBottomsSelect(null);
+        }
     };
 
     const UploadBox = ({
+        type,
         preview,
         label,
         icon: Icon
     }: {
+        type: 'model' | 'garment' | 'bottoms',
         preview: string | null,
         label: string,
         icon: any
@@ -58,13 +85,16 @@ export function UploadZone({ onModelSelect }: UploadZoneProps) {
 
         return (
             <div className="space-y-2">
-                <div className="mb-3 p-3 bg-blue-500/5 border border-blue-500/20 rounded-lg text-xs leading-relaxed text-muted-foreground">
-                    <span className="font-bold text-blue-400 flex items-center gap-1.5 mb-1.5">
-                        <Info className="w-3.5 h-3.5" />
-                        生成のコツ
-                    </span>
-                    モデル画像を選択する場合は全身の写真をお勧めします。モデル画像が全身であれば顔だけでなくスタイルやポーズも参照しながら生成されます。
-                </div>
+                {/* モデル画像の場合のみ、生成のコツを表示 */}
+                {type === 'model' && (
+                    <div className="mb-3 p-3 bg-blue-500/5 border border-blue-500/20 rounded-lg text-xs leading-relaxed text-muted-foreground">
+                        <span className="font-bold text-blue-400 flex items-center gap-1.5 mb-1.5">
+                            <Info className="w-3.5 h-3.5" />
+                            生成のコツ
+                        </span>
+                        モデル画像を選択する場合は全身の写真をお勧めします。モデル画像が全身であれば顔だけでなくスタイルやポーズも参照しながら生成されます。
+                    </div>
+                )}
 
                 <div className="flex items-center justify-between mb-1">
                     <div className="flex items-center gap-2">
@@ -73,7 +103,7 @@ export function UploadZone({ onModelSelect }: UploadZoneProps) {
                     </div>
                     {preview && (
                         <button
-                            onClick={removeFile}
+                            onClick={() => removeFile(type)}
                             className="text-[10px] flex items-center gap-1 text-red-400 hover:text-red-300 transition-colors"
                         >
                             <X className="w-3 h-3" />
@@ -84,12 +114,12 @@ export function UploadZone({ onModelSelect }: UploadZoneProps) {
 
                 <div
                     onClick={() => inputRef.current?.click()}
-                    onDrop={handleDrop}
+                    onDrop={(e) => handleDrop(e, type)}
                     onDragOver={handleDragOver}
                     className={cn(
                         "relative group cursor-pointer transition-all duration-300 ease-in-out",
                         "border-2 border-dashed rounded-xl overflow-hidden",
-                        "min-h-[260px] flex flex-col items-center justify-center p-4 text-center", // Height increased slightly for better focus
+                        "min-h-[200px] flex flex-col items-center justify-center p-4 text-center", // Height increased slightly
                         preview
                             ? "border-transparent bg-black/40 shadow-sm"
                             : "border-border/50 hover:border-cyan-500/50 hover:bg-cyan-500/5 bg-muted/5"
@@ -100,11 +130,11 @@ export function UploadZone({ onModelSelect }: UploadZoneProps) {
                         type="file"
                         className="hidden"
                         accept="image/*"
-                        onChange={(e) => e.target.files?.[0] && handleFileSelect(e.target.files[0])}
+                        onChange={(e) => e.target.files?.[0] && handleFileSelect(e.target.files[0], type)}
                     />
 
                     {preview ? (
-                        <div className="relative w-full h-full min-h-[260px]">
+                        <div className="relative w-full h-full min-h-[200px]">
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img
                                 src={preview}
@@ -139,11 +169,25 @@ export function UploadZone({ onModelSelect }: UploadZoneProps) {
     return (
         <div className="flex flex-col gap-6 w-full">
             <UploadBox
+                type="model"
                 preview={modelPreview}
                 label="モデル画像 (顔写真)"
                 icon={ScanFace}
             />
+            <div className="grid grid-cols-2 gap-4">
+                <UploadBox
+                    type="garment"
+                    preview={garmentPreview}
+                    label="トップス (服装)"
+                    icon={Shirt}
+                />
+                <UploadBox
+                    type="bottoms"
+                    preview={bottomsPreview}
+                    label="ボトムス (任意)"
+                    icon={ImageIcon}
+                />
+            </div>
         </div>
     );
 }
-
