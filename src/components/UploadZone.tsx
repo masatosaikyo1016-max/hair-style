@@ -55,13 +55,7 @@ export function UploadZone({ onModelSelect }: UploadZoneProps) {
 
         return (
             <div className="space-y-2">
-                <div className="mb-3 p-3 bg-blue-500/5 border border-blue-500/20 rounded-lg text-xs leading-relaxed text-muted-foreground">
-                    <span className="font-bold text-blue-400 flex items-center gap-1.5 mb-1.5">
-                        <Info className="w-3.5 h-3.5" />
-                        生成のコツ
-                    </span>
-                    モデル画像を選択する場合は全身の写真をお勧めします。モデル画像が全身であれば顔だけでなくスタイルやポーズも参照しながら生成されます。
-                </div>
+
 
                 <div className="flex items-center justify-between mb-1">
                     <div className="flex items-center gap-2">
