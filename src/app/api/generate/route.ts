@@ -123,11 +123,11 @@ export async function POST(request: Request) {
         if (needsStyleChange) {
             console.log(">>> Executing STAGE 1: Hair Style");
 
-            let stylePrompt = "";
+            const genderText = gender === 'male' ? '男性' : '女性';
 
             if (refImage) {
                 stylePrompt = `
-**重要指令：添付した${modelImage.name}の人物の髪型を、${refImage.name}の髪型に「完全置換」してください。**
+**重要指令：添付した${modelImage.name}の人物（${genderText}）の髪型を、${refImage.name}の髪型に「完全置換」してください。**
 モデル画像の元の髪型（特に長さや輪郭）は**一切考慮せず、無視してください。**
 
 【手順】
@@ -139,13 +139,14 @@ export async function POST(request: Request) {
     - **全体のシルエットとボリューム**
 
 【制約】
+- **対象の性別**：${genderText}らしい髪型のニュアンスを維持してください。
 - 人物の顔立ち（目、鼻、口、輪郭）は維持してください。
 - 元の髪がはみ出したり、透けて見えたりしないようにしてください。
 - **大胆に**形を変えてください。元の髪型に引っ張られないでください。
                 `;
             } else {
                 stylePrompt = `
-**重要指令：添付した${modelImage.name}の人物の髪型を、「${hairStyle}」に「完全置換」してください。**
+**重要指令：添付した${modelImage.name}の人物（${genderText}）の髪型を、「${hairStyle}」に「完全置換」してください。**
 モデル画像の元の髪型（特に長さや輪郭）は**一切考慮せず、無視してください。**
 
 【手順】
@@ -155,6 +156,7 @@ export async function POST(request: Request) {
     - 顔の雰囲気に合わせる必要はありません。髪型そのものを正しく描画してください。
 
 【制約】
+- **対象の性別**：${genderText}らしい髪型のニュアンスを維持してください。
 - 人物の顔立ち（目、鼻、口、輪郭）は維持してください。
 - 元の髪がはみ出したり、透けて見えたりしないようにしてください。
 - **大胆に**形を変えてください。元の髪型に引っ張られないでください。
@@ -183,6 +185,7 @@ export async function POST(request: Request) {
             console.log(">>> Executing STAGE 2: Hair Color");
 
             let colorPrompt = "";
+            const genderText = gender === 'male' ? '男性' : '女性';
 
             if (colorRefImage) {
                 colorPrompt = `
