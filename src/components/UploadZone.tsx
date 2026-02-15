@@ -6,28 +6,38 @@ import { useState, useCallback, useRef } from "react";
 
 interface UploadZoneProps {
     onModelSelect: (file: File | null) => void;
+    onStyleRefSelect: (file: File | null) => void;
 }
 
-export function UploadZone({ onModelSelect }: UploadZoneProps) {
+export function UploadZone({ onModelSelect, onStyleRefSelect }: UploadZoneProps) {
     const [modelFile, setModelFile] = useState<File | null>(null);
     const [modelPreview, setModelPreview] = useState<string | null>(null);
 
-    const handleFileSelect = useCallback((file: File) => {
+    const [refFile, setRefFile] = useState<File | null>(null);
+    const [refPreview, setRefPreview] = useState<string | null>(null);
+
+    const handleFileSelect = useCallback((file: File, type: 'model' | 'ref') => {
         const reader = new FileReader();
         reader.onloadend = () => {
             const result = reader.result as string;
-            setModelFile(file);
-            setModelPreview(result);
-            onModelSelect(file);
+            if (type === 'model') {
+                setModelFile(file);
+                setModelPreview(result);
+                onModelSelect(file);
+            } else {
+                setRefFile(file);
+                setRefPreview(result);
+                onStyleRefSelect(file);
+            }
         };
         reader.readAsDataURL(file);
-    }, [onModelSelect]);
+    }, [onModelSelect, onStyleRefSelect]);
 
-    const handleDrop = useCallback((e: React.DragEvent) => {
+    const handleDrop = useCallback((e: React.DragEvent, type: 'model' | 'ref') => {
         e.preventDefault();
         e.stopPropagation();
         if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-            handleFileSelect(e.dataTransfer.files[0]);
+            handleFileSelect(e.dataTransfer.files[0], type);
         }
     }, [handleFileSelect]);
 
@@ -36,26 +46,33 @@ export function UploadZone({ onModelSelect }: UploadZoneProps) {
         e.stopPropagation();
     };
 
-    const removeFile = () => {
-        setModelFile(null);
-        setModelPreview(null);
-        onModelSelect(null);
+    const removeFile = (type: 'model' | 'ref') => {
+        if (type === 'model') {
+            setModelFile(null);
+            setModelPreview(null);
+            onModelSelect(null);
+        } else {
+            setRefFile(null);
+            setRefPreview(null);
+            onStyleRefSelect(null);
+        }
     };
 
     const UploadBox = ({
         preview,
         label,
+        type,
         icon: Icon
     }: {
         preview: string | null,
         label: string,
+        type: 'model' | 'ref',
         icon: any
     }) => {
         const inputRef = useRef<HTMLInputElement>(null);
 
         return (
             <div className="space-y-2">
-
 
                 <div className="flex items-center justify-between mb-1">
                     <div className="flex items-center gap-2">
@@ -64,7 +81,7 @@ export function UploadZone({ onModelSelect }: UploadZoneProps) {
                     </div>
                     {preview && (
                         <button
-                            onClick={removeFile}
+                            onClick={() => removeFile(type)}
                             className="text-[10px] flex items-center gap-1 text-red-400 hover:text-red-300 transition-colors"
                         >
                             <X className="w-3 h-3" />
@@ -75,7 +92,7 @@ export function UploadZone({ onModelSelect }: UploadZoneProps) {
 
                 <div
                     onClick={() => inputRef.current?.click()}
-                    onDrop={handleDrop}
+                    onDrop={(e) => handleDrop(e, type)}
                     onDragOver={handleDragOver}
                     className={cn(
                         "relative group cursor-pointer transition-all duration-300 ease-in-out",
@@ -91,7 +108,7 @@ export function UploadZone({ onModelSelect }: UploadZoneProps) {
                         type="file"
                         className="hidden"
                         accept="image/*"
-                        onChange={(e) => e.target.files?.[0] && handleFileSelect(e.target.files[0])}
+                        onChange={(e) => e.target.files?.[0] && handleFileSelect(e.target.files[0], type)}
                     />
 
                     {preview ? (
@@ -132,7 +149,14 @@ export function UploadZone({ onModelSelect }: UploadZoneProps) {
             <UploadBox
                 preview={modelPreview}
                 label="モデル画像 (顔写真)"
+                type="model"
                 icon={ScanFace}
+            />
+            <UploadBox
+                preview={refPreview}
+                label="なりたい髪型の画像 (任意)"
+                type="ref"
+                icon={ImageIcon}
             />
         </div>
     );

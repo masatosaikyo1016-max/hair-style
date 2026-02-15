@@ -14,6 +14,7 @@ interface SettingsPanelProps {
 }
 
 const HAIR_STYLES_FEMALE = [
+    { id: 'no_change', label: '変更なし (Original)' },
     { id: 'Very Short', label: 'ベリーショート' },
     { id: 'Short', label: 'ショート' },
     { id: 'Short Bob', label: 'ショートボブ' },
@@ -28,6 +29,7 @@ const HAIR_STYLES_FEMALE = [
 ];
 
 const HAIR_STYLES_MALE = [
+    { id: 'no_change', label: '変更なし (Original)' },
     { id: 'Buzz Cut', label: '坊主' },
     { id: 'Two Block', label: 'ツーブロック' },
     { id: 'Mash', label: 'マッシュ' },
@@ -39,6 +41,7 @@ const HAIR_STYLES_MALE = [
 ];
 
 const HAIR_COLORS = [
+    { id: 'no_change', label: '変更なし (Original)', color: 'transparent' },
     { id: 'Black', label: 'ブラック', color: '#1a1a1a' },
     { id: 'Dark Brown', label: 'ダークブラウン', color: '#3d2b1f' },
     { id: 'Brown', label: 'ブラウン', color: '#654321' },
