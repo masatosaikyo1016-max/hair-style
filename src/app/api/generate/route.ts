@@ -17,10 +17,8 @@ const MODEL_FULL_NAME = "gemini-2.0-flash-exp";
 // I will use "gemini-2.0-flash-exp" as it is the latest capable model, or "gemini-1.5-pro".
 // Actually, for "generation/editing", standard models might refuse "editing" people. 
 // But the prompt "Act as a professional hair stylist..." usually works with Flash/Pro.
-// Note: User mentioned "Gemini 2.5 (Flash Image)" in context.
-// The previous code had "gemini-2.5-flash-image" which was working (or at least expected).
-// I will revert to "gemini-2.5-flash-image" to fix the 404 error caused by "gemini-2.0-flash-exp".
-const TARGET_MODEL = "gemini-2.5-flash-image";
+// Use gemini-1.5-pro for better instruction following
+const TARGET_MODEL = "gemini-1.5-pro";
 
 async function generateImage(
     apiKey: string,
@@ -133,17 +131,23 @@ export async function POST(request: Request) {
             }
 
             stylePrompt = `
-【品質】
-添付した１枚目(Target Image)のモデル画像の”髪型以外”を忠実に参照してください。
+Act as a professional hair editor.
+TASK: Change the hairstyle of the person in the 1st image.
 
-【目的】
-ヘアスタイルを変更して、美容室に行く前に確認したいです。
+[INPUTS]
+- Target Image (1st Image): Person to transform.
+- Gender: ${gender}
 
-【性別】
-${gender}
+[INSTRUCTIONS]
+1. CHANGE the hairstyle of the person in the 1st image. This is the MOST IMPORTANT task.
+2. ${stylePart}
+3. KEEP the face features and facial expression EXACTLY the same.
+4. KEEP the clothing and background EXACTLY the same.
+5. The result must be photorealistic.
 
-【ヘアスタイル】
-${stylePart}
+【日本語での補完指示】
+添付した１枚目(Target Image)のモデル画像の”髪型”を大胆に変更してください。
+”髪型以外”（顔、服装、背景）は維持してください。
             `;
 
             try {
@@ -177,17 +181,23 @@ ${stylePart}
             }
 
             colorPrompt = `
-【品質】
-添付した１枚目(Input Image)のモデル画像の”髪型以外”を忠実に参照してください。
+Act as a professional hair colorist.
+TASK: Change the hair color of the person in the 1st image.
 
-【目的】
-ヘアカラーを変更して、美容室に行く前に確認したいです。
+[INPUTS]
+- Target Image (1st Image): Person to transform.
+- Gender: ${gender}
 
-【性別】
-${gender}
+[INSTRUCTIONS]
+1. CHANGE the hair color of the person in the 1st image. This is the MOST IMPORTANT task.
+2. ${colorPart}
+3. KEEP the hairstyle shape EXACTLY the same (unless it needs to be adjusted for the new color style).
+4. KEEP the face, clothing, and background EXACTLY the same.
+5. The result must be photorealistic.
 
-【ヘアカラー】
-${colorPart}
+【日本語での補完指示】
+添付した１枚目(Input Image)のモデル画像の”髪色”を確実に変更してください。
+”髪型”や”顔”、”服装”は変えないでください。
             `;
 
             try {
