@@ -36,27 +36,30 @@ export async function POST(request: Request) {
         let promptText = "";
 
         if (refImage) {
-            // Case 1: Reference Image Provided
+            // Case 1: Reference Image Provided - Stronger Instruction
+            const colorInstruction = hairColor === 'no_change'
+                ? "3. Keep the original hair color of the Target person. However, if the style requires a specific color to look right (e.g. roots), blend it naturally."
+                : `3. CHANGE the hair color to "${hairColor}".`;
+
             promptText = `
-                Act as a professional hair stylist and photo editor.
-                Task: Change the hair style of the person in the target image to match the reference image.
+                Act as a professional hair stylist.
                 
-                Input:
+                [TASK]: TRANSFER the hairstyle from the Reference Image to the Target Image.
+                
+                [INPUTS]:
                 - Target Image (First Image): The person to transform.
-                - Reference Image (Second Image): The hairstyle to apply.
-                - Target Feature: ${gender} styling.
-                - Optional Color Override: ${hairColor === 'no_change' ? 'Keep original/reference color' : hairColor}.
+                - Reference Image (Second Image): The hairstyle source.
+                - Generated for: ${gender}.
                 
-                Instructions:
-                1. Analyze the hair style in the Reference Image clearly.
-                2. Apply that EXACT hair style to the person in the Target Image.
-                3. ${hairColor !== 'no_change' ? `Change the hair color to "${hairColor}".` : 'Match the hair color of the Reference Image (or keep original if natural).'}
-                4. Ensure the new hair looks natural and realistic on the Target person, matching their head pose and lighting.
-                5. STRICTLY KEEP the Target person's face, skin tone, clothing, and background EXACTLY the same.
+                [CRITICAL RULES]:
+                1. IGNORE the current hairstyle of the Target Image.
+                2. LOOK AT the Reference Image and COPY that hairstyle EXACTLY (shape, length, texture, volume).
+                ${colorInstruction}
+                4. The new hair must look photorealistic and match the head pose/lighting of the Target Image.
+                5. DO NOT CHANGE the face, skin, or clothes of the Target person.
                 
-                Output Requirement:
-                - Photorealistic quality.
-                - Keep the original resolution and aspect ratio of the Target Image.
+                [OUTPUT]:
+                - High-quality photo of the Target person with the NEW hairstyle.
             `;
         } else {
             // Case 2: Text-based Style Selection
