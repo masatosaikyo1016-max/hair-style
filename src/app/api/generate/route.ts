@@ -124,6 +124,7 @@ export async function POST(request: Request) {
             console.log(">>> Executing STAGE 1: Hair Style");
 
             const genderText = gender === 'male' ? '男性' : '女性';
+            let stylePrompt = "";
 
             if (refImage) {
                 stylePrompt = `
