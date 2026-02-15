@@ -123,6 +123,8 @@ export async function POST(request: Request) {
         if (needsStyleChange) {
             console.log(">>> Executing STAGE 1: Hair Style");
 
+            let stylePrompt = "";
+
             if (refImage) {
                 stylePrompt = `
 【品質】
@@ -145,6 +147,20 @@ export async function POST(request: Request) {
 【ヘアスタイル】
 「${hairStyle}」の”ヘアスタイルのみ”を忠実に参照。他の装飾やアクセサリーは参照しないでください。
                 `;
+            }
+
+            try {
+                // Call API with Model + StyleRef (if exists)
+                const resultBase64 = await generateImage(
+                    apiKey,
+                    currentImageBase64,
+                    stylePrompt,
+                    refImageBase64 // Pass style ref if exists
+                );
+                currentImageBase64 = resultBase64; // Update current image
+            } catch (e: any) {
+                console.error("Stage 1 Failed:", e);
+                return NextResponse.json({ error: `スタイル生成エラー: ${e.message}` }, { status: 500 });
             }
         } else {
             console.log(">>> Skipping STAGE 1 (No Style Change Requested)");
