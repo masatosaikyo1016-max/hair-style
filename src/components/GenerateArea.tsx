@@ -8,10 +8,11 @@ import { SettingsState } from "./SettingsPanel";
 
 interface GenerateAreaProps {
     modelImage: File | null;
+    styleRefImage?: File | null;
     settings: SettingsState;
 }
 
-export function GenerateArea({ modelImage, settings }: GenerateAreaProps) {
+export function GenerateArea({ modelImage, styleRefImage, settings }: GenerateAreaProps) {
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [isGenerating, setIsGenerating] = useState(false);
     const [generatedImage, setGeneratedImage] = useState<string | null>(null);
@@ -69,6 +70,13 @@ export function GenerateArea({ modelImage, settings }: GenerateAreaProps) {
             // Prepare FormData for Server API
             const formData = new FormData();
             formData.append('modelImage', resizedModelFile);
+
+            if (styleRefImage) {
+                // Resize ref image too
+                const resizedRefFile = await resizeImage(styleRefImage, 1024, 1024);
+                formData.append('refImage', resizedRefFile);
+            }
+
             formData.append('hairColor', settings.hairColor);
             formData.append('hairStyle', settings.hairStyle);
             formData.append('gender', settings.gender);

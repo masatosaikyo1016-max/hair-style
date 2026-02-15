@@ -7,6 +7,7 @@ import { useState } from "react";
 
 export default function Home() {
   const [modelImage, setModelImage] = useState<File | null>(null);
+  const [styleRefImage, setStyleRefImage] = useState<File | null>(null);
 
   // State for all settings
   const [settings, setSettings] = useState<SettingsState>({
@@ -44,6 +45,7 @@ export default function Home() {
           <h3 className="text-sm font-semibold text-muted-foreground mb-4 uppercase tracking-wider">Input Assets</h3>
           <UploadZone
             onModelSelect={setModelImage}
+            onStyleRefSelect={setStyleRefImage}
           />
         </section>
 
@@ -56,6 +58,7 @@ export default function Home() {
       <div className="flex-1 w-full min-h-[500px] md:min-h-0 md:h-full md:overflow-y-auto custom-scrollbar">
         <GenerateArea
           modelImage={modelImage}
+          styleRefImage={styleRefImage}
           settings={settings}
         />
       </div>
