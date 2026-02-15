@@ -4,6 +4,8 @@ export async function POST(request: Request) {
     try {
         const formData = await request.formData();
         const modelImage = formData.get('modelImage') as File;
+        const refImage = formData.get('refImage') as File | null;
+
         const hairColor = formData.get('hairColor') as string || "Brown";
         // ヘアスタイルを取得 (デフォルトは Medium)
         const hairStyle = formData.get('hairStyle') as string || "Medium";
@@ -31,28 +33,63 @@ export async function POST(request: Request) {
         }
 
         // Construct Prompt for Gemini
-        // Construct Prompt for Gemini
-        const promptText = `
-            Act as a professional hair stylist and photo editor.
-            Task: Change the hair style and hair color of the person in the image.
-            
-            Input:
-            - Target Hair Style: ${hairStyle}
-            - Target Hair Color: ${hairColor}
-            - Style Context: ${gender} styling
-            
-            Instructions:
-            1. Identify the person in the image.
-            2. COMPLETELY REPLACE the original hair with the target style: "${hairStyle}".
-            3. Apply the target hair color: "${hairColor}".
-            4. Ensure the new hair looks natural, realistic, and matches the lighting/head pose.
-            5. STRICTLY KEEP the face, skin tone, clothing, and background EXACTLY the same.
-            6. The new hairstyle should be typical for a ${gender}.
-            
-            Output Requirement:
-            - Photorealistic quality.
-            - Keep the original resolution and aspect ratio.
-        `;
+        let promptText = "";
+
+        if (refImage) {
+            // Case 1: Reference Image Provided
+            promptText = `
+                Act as a professional hair stylist and photo editor.
+                Task: Change the hair style of the person in the target image to match the reference image.
+                
+                Input:
+                - Target Image (First Image): The person to transform.
+                - Reference Image (Second Image): The hairstyle to apply.
+                - Target Feature: ${gender} styling.
+                - Optional Color Override: ${hairColor === 'no_change' ? 'Keep original/reference color' : hairColor}.
+                
+                Instructions:
+                1. Analyze the hair style in the Reference Image clearly.
+                2. Apply that EXACT hair style to the person in the Target Image.
+                3. ${hairColor !== 'no_change' ? `Change the hair color to "${hairColor}".` : 'Match the hair color of the Reference Image (or keep original if natural).'}
+                4. Ensure the new hair looks natural and realistic on the Target person, matching their head pose and lighting.
+                5. STRICTLY KEEP the Target person's face, skin tone, clothing, and background EXACTLY the same.
+                
+                Output Requirement:
+                - Photorealistic quality.
+                - Keep the original resolution and aspect ratio of the Target Image.
+            `;
+        } else {
+            // Case 2: Text-based Style Selection
+            const styleInstruction = hairStyle === 'no_change'
+                ? 'KEEP the original hair style exactly as is. Do NOT change the shape or length.'
+                : `COMPLETELY REPLACE the original hair with the target style: "${hairStyle}".`;
+
+            const colorInstruction = hairColor === 'no_change'
+                ? 'KEEP the original hair color exactly as is.'
+                : `Apply the target hair color: "${hairColor}".`;
+
+            promptText = `
+                Act as a professional hair stylist and photo editor.
+                Task: Change the hair style and hair color of the person in the image.
+                
+                Input:
+                - Target Hair Style: ${hairStyle === 'no_change' ? 'ORIGINAL (No Change)' : hairStyle}
+                - Target Hair Color: ${hairColor === 'no_change' ? 'ORIGINAL (No Change)' : hairColor}
+                - Style Context: ${gender} styling
+                
+                Instructions:
+                1. Identify the person in the image.
+                2. ${styleInstruction}
+                3. ${colorInstruction}
+                4. Ensure the hair looks natural, realistic, and matches the lighting/head pose.
+                5. STRICTLY KEEP the face, skin tone, clothing, and background EXACTLY the same.
+                6. ${hairStyle !== 'no_change' ? `The new hairstyle should be typical for a ${gender}.` : ''}
+                
+                Output Requirement:
+                - Photorealistic quality.
+                - Keep the original resolution and aspect ratio.
+            `;
+        }
 
         const modelBuffer = Buffer.from(await modelImage.arrayBuffer());
         const modelBase64 = modelBuffer.toString('base64');
@@ -61,6 +98,15 @@ export async function POST(request: Request) {
             { text: promptText },
             { inline_data: { mime_type: modelImage.type || "image/jpeg", data: modelBase64 } }
         ];
+
+        // Add Reference Image if exists
+        if (refImage) {
+            const refBuffer = Buffer.from(await refImage.arrayBuffer());
+            const refBase64 = refBuffer.toString('base64');
+            contentsParts.push({
+                inline_data: { mime_type: refImage.type || "image/jpeg", data: refBase64 }
+            });
+        }
 
         console.log("Calling Gemini API (Server-side)...");
 
