@@ -9,10 +9,11 @@ import { SettingsState } from "./SettingsPanel";
 interface GenerateAreaProps {
     modelImage: File | null;
     styleRefImage?: File | null;
+    colorRefImage?: File | null;
     settings: SettingsState;
 }
 
-export function GenerateArea({ modelImage, styleRefImage, settings }: GenerateAreaProps) {
+export function GenerateArea({ modelImage, styleRefImage, colorRefImage, settings }: GenerateAreaProps) {
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [isGenerating, setIsGenerating] = useState(false);
     const [generatedImage, setGeneratedImage] = useState<string | null>(null);
@@ -77,8 +78,14 @@ export function GenerateArea({ modelImage, styleRefImage, settings }: GenerateAr
                 formData.append('refImage', resizedRefFile);
             }
 
-            formData.append('hairColor', settings.hairColor);
-            formData.append('hairStyle', settings.hairStyle);
+            if (colorRefImage) {
+                const resizedColorRefFile = await resizeImage(colorRefImage, 1024, 1024);
+                formData.append('colorRefImage', resizedColorRefFile);
+            }
+
+            // Only append settings if they are selected (not null)
+            if (settings.hairColor) formData.append('hairColor', settings.hairColor);
+            if (settings.hairStyle) formData.append('hairStyle', settings.hairStyle);
             formData.append('gender', settings.gender);
 
             // Add fixed values for removed settings if API still needs them (or update API later)

@@ -5,14 +5,14 @@ export async function POST(request: Request) {
         const formData = await request.formData();
         const modelImage = formData.get('modelImage') as File;
         const refImage = formData.get('refImage') as File | null;
+        const colorRefImage = formData.get('colorRefImage') as File | null;
 
-        const hairColor = formData.get('hairColor') as string || "Brown";
-        // ヘアスタイルを取得 (デフォルトは Medium)
-        const hairStyle = formData.get('hairStyle') as string || "Medium";
+        const hairColor = formData.get('hairColor') as string | null;
+        const hairStyle = formData.get('hairStyle') as string | null;
         const gender = formData.get('gender') as string || "female";
 
         console.log("--- Hair Style Generation Request Received (Server) ---");
-        console.log("Settings:", { hairColor, hairStyle, gender });
+        console.log("Settings:", { hairColor, hairStyle, gender, hasRefImage: !!refImage, hasColorRefImage: !!colorRefImage });
 
         if (!modelImage) {
             return NextResponse.json(
@@ -25,74 +25,58 @@ export async function POST(request: Request) {
         const apiKey = process.env.GEMINI_API_KEY;
 
         if (!apiKey) {
-            console.error("API Key is missing in server environment");
             return NextResponse.json(
-                { error: 'サーバーの設定エラー: APIキーが設定されていません。環境変数 GEMINI_API_KEY を確認してください。' },
+                { error: 'サーバーの設定エラー: APIキーが設定されていません。' },
                 { status: 500 }
             );
         }
 
-        // Construct Prompt for Gemini
-        let promptText = "";
+        // --- Logic to Construct Prompt ---
+        // We handle 3 input types for Style and 3 for Color:
+        // Style: 1. Ref Image, 2. Text Selection, 3. Keep Original (None)
+        // Color: 1. Ref Image, 2. Text Selection, 3. Keep Original (None)
 
+        // 1. Determine Style Instruction
+        let styleInstruction = "";
         if (refImage) {
-            // Case 1: Reference Image Provided - Stronger Instruction
-            const colorInstruction = hairColor === 'no_change'
-                ? "3. Keep the original hair color of the Target person. However, if the style requires a specific color to look right (e.g. roots), blend it naturally."
-                : `3. CHANGE the hair color to "${hairColor}".`;
-
-            promptText = `
-                Act as a professional hair stylist.
-                
-                [TASK]: TRANSFER the hairstyle from the Reference Image to the Target Image.
-                
-                [INPUTS]:
-                - Target Image (First Image): The person to transform.
-                - Reference Image (Second Image): The hairstyle source.
-                - Generated for: ${gender}.
-                
-                [CRITICAL RULES]:
-                1. IGNORE the current hairstyle of the Target Image.
-                2. LOOK AT the Reference Image and COPY that hairstyle EXACTLY (shape, length, texture, volume).
-                ${colorInstruction}
-                4. The new hair must look photorealistic and match the head pose/lighting of the Target Image.
-                5. DO NOT CHANGE the face, skin, or clothes of the Target person.
-                
-                [OUTPUT]:
-                - High-quality photo of the Target person with the NEW hairstyle.
-            `;
+            styleInstruction = "2. LOOK AT the Style Reference Image (2nd Image) and COPY that hairstyle EXACTLY (shape, length, texture). IGNORE original hair shape.";
+        } else if (hairStyle) {
+            styleInstruction = `2. COMPLETELY REPLACE the original hair with the target style: "${hairStyle}".`;
         } else {
-            // Case 2: Text-based Style Selection
-            const styleInstruction = hairStyle === 'no_change'
-                ? 'KEEP the original hair style exactly as is. Do NOT change the shape or length.'
-                : `COMPLETELY REPLACE the original hair with the target style: "${hairStyle}".`;
-
-            const colorInstruction = hairColor === 'no_change'
-                ? 'KEEP the original hair color exactly as is.'
-                : `Apply the target hair color: "${hairColor}".`;
-
-            promptText = `
-                Act as a professional hair stylist and photo editor.
-                Task: Change the hair style and hair color of the person in the image.
-                
-                Input:
-                - Target Hair Style: ${hairStyle === 'no_change' ? 'ORIGINAL (No Change)' : hairStyle}
-                - Target Hair Color: ${hairColor === 'no_change' ? 'ORIGINAL (No Change)' : hairColor}
-                - Style Context: ${gender} styling
-                
-                Instructions:
-                1. Identify the person in the image.
-                2. ${styleInstruction}
-                3. ${colorInstruction}
-                4. Ensure the hair looks natural, realistic, and matches the lighting/head pose.
-                5. STRICTLY KEEP the face, skin tone, clothing, and background EXACTLY the same.
-                6. ${hairStyle !== 'no_change' ? `The new hairstyle should be typical for a ${gender}.` : ''}
-                
-                Output Requirement:
-                - Photorealistic quality.
-                - Keep the original resolution and aspect ratio.
-            `;
+            styleInstruction = "2. STRICTLY KEEP the original hairstyle shape, length, and texture. Do NOT change the form of the hair.";
         }
+
+        // 2. Determine Color Instruction
+        let colorInstruction = "";
+        if (colorRefImage) {
+            colorInstruction = "3. LOOK AT the Color Reference Image (3rd Image) and APPLY that exact hair color/gradient/highlight to the new hair.";
+        } else if (hairColor) {
+            colorInstruction = `3. CHANGE the hair color to "${hairColor}".`;
+        } else {
+            colorInstruction = "3. STRICTLY KEEP the original hair color (or use natural color if hair was replaced).";
+        }
+
+        const promptText = `
+            Act as a professional hair stylist.
+            
+            [TASK]: Edit the hair of the person in the input image according to the instructions.
+            
+            [INPUTS]:
+            - Target Image (1st Image): The person to transform.
+            ${refImage ? '- Style Reference Image (2nd Image): Hairstyle source.' : ''}
+            ${colorRefImage ? `- Color Reference Image (${refImage ? '3rd' : '2nd'} Image): Hair color source.` : ''}
+            - Generated for: ${gender}.
+            
+            [CRITICAL INSTRUCTIONS]:
+            1. Identify the person in the Target Image.
+            ${styleInstruction}
+            ${colorInstruction}
+            4. The result must be photorealistic and match the head pose/lighting of the Target Image.
+            5. STRICTLY KEEP the face, skin tone, and clothing EXACTLY the same.
+            
+            [OUTPUT]:
+            - High-quality photo of the Target person with the requested modification.
+        `;
 
         const modelBuffer = Buffer.from(await modelImage.arrayBuffer());
         const modelBase64 = modelBuffer.toString('base64');
@@ -102,12 +86,20 @@ export async function POST(request: Request) {
             { inline_data: { mime_type: modelImage.type || "image/jpeg", data: modelBase64 } }
         ];
 
-        // Add Reference Image if exists
+        // Add Reference Images
         if (refImage) {
             const refBuffer = Buffer.from(await refImage.arrayBuffer());
             const refBase64 = refBuffer.toString('base64');
             contentsParts.push({
                 inline_data: { mime_type: refImage.type || "image/jpeg", data: refBase64 }
+            });
+        }
+
+        if (colorRefImage) {
+            const colorRefBuffer = Buffer.from(await colorRefImage.arrayBuffer());
+            const colorRefBase64 = colorRefBuffer.toString('base64');
+            contentsParts.push({
+                inline_data: { mime_type: colorRefImage.type || "image/jpeg", data: colorRefBase64 }
             });
         }
 

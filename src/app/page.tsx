@@ -8,22 +8,23 @@ import { useState } from "react";
 export default function Home() {
   const [modelImage, setModelImage] = useState<File | null>(null);
   const [styleRefImage, setStyleRefImage] = useState<File | null>(null);
+  const [colorRefImage, setColorRefImage] = useState<File | null>(null);
 
   // State for all settings
   const [settings, setSettings] = useState<SettingsState>({
     gender: "female",
-    hairStyle: "Medium",
-    hairColor: "Brown"
+    hairStyle: null,
+    hairColor: null
   });
 
   const handleSettingChange = (key: keyof SettingsState, value: any) => {
     setSettings(prev => {
-      // If gender changes, reset hair style to default for that gender
+      // If gender changes, reset hair style (optional, maybe keep it null)
       if (key === 'gender' && value !== prev.gender) {
         return {
           ...prev,
           [key]: value,
-          hairStyle: value === 'male' ? "Buzz Cut" : "Medium"
+          hairStyle: null // Reset style on gender switch
         };
       }
       return { ...prev, [key]: value };
@@ -46,6 +47,7 @@ export default function Home() {
           <UploadZone
             onModelSelect={setModelImage}
             onStyleRefSelect={setStyleRefImage}
+            onColorRefSelect={setColorRefImage}
           />
         </section>
 
@@ -59,6 +61,7 @@ export default function Home() {
         <GenerateArea
           modelImage={modelImage}
           styleRefImage={styleRefImage}
+          colorRefImage={colorRefImage}
           settings={settings}
         />
       </div>

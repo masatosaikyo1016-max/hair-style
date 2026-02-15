@@ -4,8 +4,8 @@ import { ReactNode } from "react";
 
 export interface SettingsState {
     gender: 'female' | 'male';
-    hairStyle: string;
-    hairColor: string;
+    hairStyle: string | null;
+    hairColor: string | null;
 }
 
 interface SettingsPanelProps {
@@ -14,7 +14,6 @@ interface SettingsPanelProps {
 }
 
 const HAIR_STYLES_FEMALE = [
-    { id: 'no_change', label: '変更なし (Original)' },
     { id: 'Very Short', label: 'ベリーショート' },
     { id: 'Short', label: 'ショート' },
     { id: 'Short Bob', label: 'ショートボブ' },
@@ -29,7 +28,6 @@ const HAIR_STYLES_FEMALE = [
 ];
 
 const HAIR_STYLES_MALE = [
-    { id: 'no_change', label: '変更なし (Original)' },
     { id: 'Buzz Cut', label: '坊主' },
     { id: 'Two Block', label: 'ツーブロック' },
     { id: 'Mash', label: 'マッシュ' },
@@ -41,7 +39,6 @@ const HAIR_STYLES_MALE = [
 ];
 
 const HAIR_COLORS = [
-    { id: 'no_change', label: '変更なし (Original)', color: 'transparent' },
     { id: 'Black', label: 'ブラック', color: '#1a1a1a' },
     { id: 'Dark Brown', label: 'ダークブラウン', color: '#3d2b1f' },
     { id: 'Brown', label: 'ブラウン', color: '#654321' },
@@ -67,6 +64,15 @@ function OptionSection({ label, children, icon }: { label: string; children: Rea
 
 export function SettingsPanel({ settings, onSettingChange }: SettingsPanelProps) {
     const currentHairStyles = settings.gender === 'male' ? HAIR_STYLES_MALE : HAIR_STYLES_FEMALE;
+
+    // Toggle logic: If already selected, deselect (set to null)
+    const handleToggle = (key: keyof SettingsState, value: string) => {
+        if (settings[key] === value) {
+            onSettingChange(key, null);
+        } else {
+            onSettingChange(key, value);
+        }
+    };
 
     return (
         <div className="h-full flex flex-col gap-8 overflow-y-auto pr-2 custom-scrollbar">
@@ -107,7 +113,7 @@ export function SettingsPanel({ settings, onSettingChange }: SettingsPanelProps)
                     {HAIR_COLORS.map((color) => (
                         <button
                             key={color.id}
-                            onClick={() => onSettingChange('hairColor', color.id)}
+                            onClick={() => handleToggle('hairColor', color.id)}
                             className={cn(
                                 "flex flex-col items-center gap-1 p-2 rounded-lg border text-xs transition-all hover:scale-[1.02]",
                                 settings.hairColor === color.id
@@ -130,7 +136,7 @@ export function SettingsPanel({ settings, onSettingChange }: SettingsPanelProps)
                     {currentHairStyles.map((style) => (
                         <button
                             key={style.id}
-                            onClick={() => onSettingChange('hairStyle', style.id)}
+                            onClick={() => handleToggle('hairStyle', style.id)}
                             className={cn(
                                 "px-3 py-2 rounded-lg border text-sm transition-all hover:scale-[1.02]",
                                 settings.hairStyle === style.id

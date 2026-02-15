@@ -7,16 +7,20 @@ import { useState, useCallback, useRef } from "react";
 interface UploadZoneProps {
     onModelSelect: (file: File | null) => void;
     onStyleRefSelect: (file: File | null) => void;
+    onColorRefSelect: (file: File | null) => void;
 }
 
-export function UploadZone({ onModelSelect, onStyleRefSelect }: UploadZoneProps) {
+export function UploadZone({ onModelSelect, onStyleRefSelect, onColorRefSelect }: UploadZoneProps) {
     const [modelFile, setModelFile] = useState<File | null>(null);
     const [modelPreview, setModelPreview] = useState<string | null>(null);
 
     const [refFile, setRefFile] = useState<File | null>(null);
     const [refPreview, setRefPreview] = useState<string | null>(null);
 
-    const handleFileSelect = useCallback((file: File, type: 'model' | 'ref') => {
+    const [colorRefFile, setColorRefFile] = useState<File | null>(null);
+    const [colorRefPreview, setColorRefPreview] = useState<string | null>(null);
+
+    const handleFileSelect = useCallback((file: File, type: 'model' | 'ref' | 'colorRef') => {
         const reader = new FileReader();
         reader.onloadend = () => {
             const result = reader.result as string;
@@ -24,16 +28,20 @@ export function UploadZone({ onModelSelect, onStyleRefSelect }: UploadZoneProps)
                 setModelFile(file);
                 setModelPreview(result);
                 onModelSelect(file);
-            } else {
+            } else if (type === 'ref') {
                 setRefFile(file);
                 setRefPreview(result);
                 onStyleRefSelect(file);
+            } else {
+                setColorRefFile(file);
+                setColorRefPreview(result);
+                onColorRefSelect(file);
             }
         };
         reader.readAsDataURL(file);
-    }, [onModelSelect, onStyleRefSelect]);
+    }, [onModelSelect, onStyleRefSelect, onColorRefSelect]);
 
-    const handleDrop = useCallback((e: React.DragEvent, type: 'model' | 'ref') => {
+    const handleDrop = useCallback((e: React.DragEvent, type: 'model' | 'ref' | 'colorRef') => {
         e.preventDefault();
         e.stopPropagation();
         if (e.dataTransfer.files && e.dataTransfer.files[0]) {
@@ -46,15 +54,19 @@ export function UploadZone({ onModelSelect, onStyleRefSelect }: UploadZoneProps)
         e.stopPropagation();
     };
 
-    const removeFile = (type: 'model' | 'ref') => {
+    const removeFile = (type: 'model' | 'ref' | 'colorRef') => {
         if (type === 'model') {
             setModelFile(null);
             setModelPreview(null);
             onModelSelect(null);
-        } else {
+        } else if (type === 'ref') {
             setRefFile(null);
             setRefPreview(null);
             onStyleRefSelect(null);
+        } else {
+            setColorRefFile(null);
+            setColorRefPreview(null);
+            onColorRefSelect(null);
         }
     };
 
@@ -66,7 +78,7 @@ export function UploadZone({ onModelSelect, onStyleRefSelect }: UploadZoneProps)
     }: {
         preview: string | null,
         label: string,
-        type: 'model' | 'ref',
+        type: 'model' | 'ref' | 'colorRef',
         icon: any
     }) => {
         const inputRef = useRef<HTMLInputElement>(null);
@@ -157,6 +169,12 @@ export function UploadZone({ onModelSelect, onStyleRefSelect }: UploadZoneProps)
                 label="なりたい髪型の画像 (任意)"
                 type="ref"
                 icon={ImageIcon}
+            />
+            <UploadBox
+                preview={colorRefPreview}
+                label="なりたい髪色の画像 (任意)"
+                type="colorRef"
+                icon={Shirt}
             />
         </div>
     );
