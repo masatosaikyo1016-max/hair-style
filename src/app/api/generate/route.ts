@@ -47,7 +47,7 @@ async function generateImage(
         body: JSON.stringify({
             contents: [{ parts: contentsParts }],
             generationConfig: {
-                temperature: 0.4,
+                temperature: 0.75,
                 topK: 32,
                 topP: 1,
                 maxOutputTokens: 2048,
@@ -128,18 +128,18 @@ export async function POST(request: Request) {
             if (refImage) {
                 stylePrompt = `
 【品質】
-添付した${modelImage.name}のモデル画像の”髪型以外”を忠実に参照してください。
+添付した１枚目(${modelImage.name}）のモデル画像の”髪型以外”を忠実に参照してください。
 
 【目的】
 ヘアスタイルを変更して、美容室に行く前に確認したいです。
 
 【ヘアスタイル】
-添付画像${refImage.name}の”ヘアスタイルのみ”を忠実に参照。他の装飾やアクセサリーは参照しないでください。
+添付画像２枚目(${refImage.name}）の”ヘアスタイルのみ”を忠実に参照。他の装飾やアクセサリーは参照しないでください。
                 `;
             } else {
                 stylePrompt = `
 【品質】
-添付した${modelImage.name}のモデル画像の”髪型以外”を忠実に参照してください。
+添付した１枚目(${modelImage.name}）のモデル画像の”髪型以外”を忠実に参照してください。
 
 【目的】
 ヘアスタイルを変更して、美容室に行く前に確認したいです。
