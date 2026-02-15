@@ -17,8 +17,10 @@ const MODEL_FULL_NAME = "gemini-2.0-flash-exp";
 // I will use "gemini-2.0-flash-exp" as it is the latest capable model, or "gemini-1.5-pro".
 // Actually, for "generation/editing", standard models might refuse "editing" people. 
 // But the prompt "Act as a professional hair stylist..." usually works with Flash/Pro.
-// I will use `gemini-2.0-flash-exp` for best results.
-const TARGET_MODEL = "gemini-2.0-flash-exp";
+// Note: User mentioned "Gemini 2.5 (Flash Image)" in context.
+// The previous code had "gemini-2.5-flash-image" which was working (or at least expected).
+// I will revert to "gemini-2.5-flash-image" to fix the 404 error caused by "gemini-2.0-flash-exp".
+const TARGET_MODEL = "gemini-2.5-flash-image";
 
 async function generateImage(
     apiKey: string,
