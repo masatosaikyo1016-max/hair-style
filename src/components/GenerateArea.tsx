@@ -147,7 +147,8 @@ export function GenerateArea({ modelImage, styleRefImage, colorRefImage, setting
             const blob = await response.blob();
             const formData = new FormData();
             formData.append('file', blob, filename);
-            formData.append('hairStyle', settings.hairStyle);
+            // Fix: Handle null for hairStyle
+            formData.append('hairStyle', settings.hairStyle || "Unknown");
             const saveResponse = await fetch('/api/save-image', {
                 method: 'POST',
                 body: formData,
