@@ -123,47 +123,28 @@ export async function POST(request: Request) {
         if (needsStyleChange) {
             console.log(">>> Executing STAGE 1: Hair Style");
 
-            let stylePrompt = "";
-            let stylePart = "";
-
             if (refImage) {
-                stylePart = `添付画像２枚目(Style Reference)の”ヘアスタイルのみ”を忠実に参照。他の装飾やアクセサリーは参照しないでください。`;
+                stylePrompt = `
+【品質】
+添付した１枚目(モデル画像欄の画像のファイル名）のモデル画像の”髪型以外”を忠実に参照してください。
+
+【目的】
+ヘアスタイルを変更して、美容室に行く前に確認したいです。
+
+【ヘアスタイル】
+添付画像２枚目(の”ヘアスタイルのみ”を忠実に参照。他の装飾やアクセサリーは参照しないでください。
+                `;
             } else {
-                stylePart = `指定された髪型: "${hairStyle}" に変更してください。`;
-            }
+                stylePrompt = `
+【品質】
+添付した１枚目(モデル画像欄の画像のファイル名）のモデル画像の”髪型以外”を忠実に参照してください。
 
-            stylePrompt = `
-Act as a professional hair editor.
-TASK: Change the hairstyle of the person in the 1st image.
+【目的】
+ヘアスタイルを変更して、美容室に行く前に確認したいです。
 
-[INPUTS]
-- Target Image (1st Image): Person to transform.
-- Gender: ${gender}
-
-[INSTRUCTIONS]
-1. CHANGE the hairstyle of the person in the 1st image. This is the MOST IMPORTANT task.
-2. ${stylePart}
-3. KEEP the face features and facial expression EXACTLY the same.
-4. KEEP the clothing and background EXACTLY the same.
-5. The result must be photorealistic.
-
-【日本語での補完指示】
-添付した１枚目(Target Image)のモデル画像の”髪型”を大胆に変更してください。
-”髪型以外”（顔、服装、背景）は維持してください。
-            `;
-
-            try {
-                // Call API with Model + StyleRef (if exists)
-                const resultBase64 = await generateImage(
-                    apiKey,
-                    currentImageBase64,
-                    stylePrompt,
-                    refImageBase64 // Pass style ref if exists
-                );
-                currentImageBase64 = resultBase64; // Update current image
-            } catch (e: any) {
-                console.error("Stage 1 Failed:", e);
-                return NextResponse.json({ error: `スタイル生成エラー: ${e.message}` }, { status: 500 });
+【ヘアスタイル】
+「${hairStyle}」の”ヘアスタイルのみ”を忠実に参照。他の装飾やアクセサリーは参照しないでください。
+                `;
             }
         } else {
             console.log(">>> Skipping STAGE 1 (No Style Change Requested)");
@@ -174,33 +155,30 @@ TASK: Change the hairstyle of the person in the 1st image.
             console.log(">>> Executing STAGE 2: Hair Color");
 
             let colorPrompt = "";
-            let colorPart = "";
 
             if (colorRefImage) {
-                colorPart = `添付画像２枚目(Color Reference)の”ヘアカラーのみ”を忠実に参照。他の装飾やアクセサリーは参照しないでください。`;
+                colorPrompt = `
+【品質】
+添付した１枚目のモデル画像の”髪型以外”を忠実に参照してください。
+
+【目的】
+ヘアカラーを変更して、美容室に行く前に確認したいです。
+
+【ヘアカラー】
+添付画像２枚目の”ヘアカラーのみ”を忠実に参照。他の装飾やアクセサリーは参照しないでください。
+                 `;
             } else {
-                colorPart = `指定された髪色: "${hairColor}" に変更してください。`;
+                colorPrompt = `
+【品質】
+添付した１枚目のモデル画像の”髪型以外”を忠実に参照してください。
+
+【目的】
+ヘアカラーを変更して、美容室に行く前に確認したいです。
+
+【ヘアカラー】
+「${hairColor}」の”ヘアカラーのみ”を忠実に参照。他の装飾やアクセサリーは参照しないでください。
+                `;
             }
-
-            colorPrompt = `
-Act as a professional hair colorist.
-TASK: Change the hair color of the person in the 1st image.
-
-[INPUTS]
-- Target Image (1st Image): Person to transform.
-- Gender: ${gender}
-
-[INSTRUCTIONS]
-1. CHANGE the hair color of the person in the 1st image. This is the MOST IMPORTANT task.
-2. ${colorPart}
-3. KEEP the hairstyle shape EXACTLY the same (unless it needs to be adjusted for the new color style).
-4. KEEP the face, clothing, and background EXACTLY the same.
-5. The result must be photorealistic.
-
-【日本語での補完指示】
-添付した１枚目(Input Image)のモデル画像の”髪色”を確実に変更してください。
-”髪型”や”顔”、”服装”は変えないでください。
-            `;
 
             try {
                 // Call API with Current Image (Result of Stage 1 or Original) + ColorRef (if exists)
