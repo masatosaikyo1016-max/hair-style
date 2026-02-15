@@ -181,7 +181,7 @@ export async function POST(request: Request) {
 ヘアカラーを変更して、美容室に行く前に確認したいです。
 
 【ヘアカラー】
-添付画像${colorRefImage.name}の”ヘアカラーのみ”を忠実に参照。他の装飾やアクセサリーは参照しないでください。
+添付画像２枚目(${colorRefImage.name}）の”ヘアカラーのみ”を忠実に参照。他の装飾やアクセサリーは参照しないでください。
                  `;
             } else {
                 colorPrompt = `
