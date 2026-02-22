@@ -129,7 +129,7 @@ export async function POST(request: Request) {
             if (refImage) {
                 stylePrompt = `
 【品質】
-添付した1枚目（${modelImage.name}）のモデル画像の”髪型以外”を忠実に参照してください。
+添付した1枚目（${modelImage.name}）のモデル画像を忠実に参照してください。
 
 【目的】
 ヘアスタイルを変更して、美容室に行く前に確認したいです。
@@ -140,7 +140,7 @@ export async function POST(request: Request) {
             } else {
                 stylePrompt = `
 【品質】
-添付した1枚目（${modelImage.name}）のモデル画像の”髪型以外”を忠実に参照してください。
+添付した1枚目（${modelImage.name}）のモデル画像を忠実に参照してください。
 
 【目的】
 ヘアスタイルを変更して、美容室に行く前に確認したいです。
@@ -177,7 +177,7 @@ export async function POST(request: Request) {
             if (colorRefImage) {
                 colorPrompt = `
 【品質】
-添付した1枚目（${modelImage.name}）のモデル画像の”髪型以外”を忠実に参照してください。
+添付した1枚目（${modelImage.name}）のモデル画像を忠実に参照してください。
 
 【目的】
 ヘアカラーを変更して、美容室に行く前に確認したいです。
@@ -188,7 +188,7 @@ export async function POST(request: Request) {
             } else {
                 colorPrompt = `
 【品質】
-添付した1枚目（${modelImage.name}）のモデル画像の”髪型以外”を忠実に参照してください。
+添付した1枚目（${modelImage.name}）のモデル画像を忠実に参照してください。
 
 【目的】
 ヘアカラーを変更して、美容室に行く前に確認したいです。
