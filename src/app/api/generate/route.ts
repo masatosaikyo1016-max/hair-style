@@ -20,7 +20,7 @@ const MODEL_FULL_NAME = "gemini-2.0-flash-exp";
 // Note: User mentioned "Gemini 2.5 (Flash Image)" in context.
 // The previous code had "gemini-2.5-flash-image" which was working (or at least expected).
 // I will revert to "gemini-2.5-flash-image" to fix the 404 error caused by "gemini-2.0-flash-exp".
-const TARGET_MODEL = "gemini-2.5-flash-image";
+const TARGET_MODEL = "gemini-3-pro-image-preview";
 
 async function generateImage(
     apiKey: string,
