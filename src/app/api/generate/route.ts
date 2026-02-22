@@ -129,18 +129,18 @@ export async function POST(request: Request) {
             if (refImage) {
                 stylePrompt = `
 【品質】
-添付した${modelImage.name}のモデル画像の”髪型以外”を忠実に参照してください。
+添付した1枚目（${modelImage.name}）のモデル画像の”髪型以外”を忠実に参照してください。
 
 【目的】
 ヘアスタイルを変更して、美容室に行く前に確認したいです。
 
 【ヘアスタイル】
-添付画像${refImage.name}の”ヘアスタイルのみ”を忠実に参照。他の装飾やアクセサリーは参照しないでください。
+添付画像2枚目（${refImage.name}）の”ヘアスタイルのみ”を忠実に参照。他の装飾やアクセサリーは参照しないでください。
                 `;
             } else {
                 stylePrompt = `
 【品質】
-添付した${modelImage.name}のモデル画像の”髪型以外”を忠実に参照してください。
+添付した1枚目（${modelImage.name}）のモデル画像の”髪型以外”を忠実に参照してください。
 
 【目的】
 ヘアスタイルを変更して、美容室に行く前に確認したいです。
@@ -177,18 +177,18 @@ export async function POST(request: Request) {
             if (colorRefImage) {
                 colorPrompt = `
 【品質】
-添付した${modelImage.name}のモデル画像の”髪型以外”を忠実に参照してください。
+添付した1枚目（${modelImage.name}）のモデル画像の”髪型以外”を忠実に参照してください。
 
 【目的】
 ヘアカラーを変更して、美容室に行く前に確認したいです。
 
 【ヘアカラー】
-添付画像${colorRefImage.name}の”ヘアカラーのみ”を忠実に参照。他の装飾やアクセサリーは参照しないでください。
+添付画像2枚目（${colorRefImage.name}）の”ヘアカラーのみ”を忠実に参照。他の装飾やアクセサリーは参照しないでください。
                  `;
             } else {
                 colorPrompt = `
 【品質】
-添付した${modelImage.name}のモデル画像の”髪型以外”を忠実に参照してください。
+添付した1枚目（${modelImage.name}）のモデル画像の”髪型以外”を忠実に参照してください。
 
 【目的】
 ヘアカラーを変更して、美容室に行く前に確認したいです。
